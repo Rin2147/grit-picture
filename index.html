@@ -75,7 +75,7 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
         .top-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
-        /* スマホ用レスポンシブデザイン */
+        /* スマホ用デザイン */
         @media screen and (max-width: 768px) {
             body { flex-direction: column; padding: 10px; gap: 15px; }
             .sidebar { width: 100%; max-height: 300px; order: 2; }
@@ -153,7 +153,6 @@
         let selectedImages = [];
         let sortableInstance = null;
         
-        // --- 厳密なダブルタップ判定のための変数 ---
         let lastTapIndex = -1;
         let lastTapTime = 0;
 
@@ -232,17 +231,16 @@
                 img.src = imgData.dataUrl;
                 img.className = 'preview-item';
 
-                // --- 誤爆しないスマート・ダブルタップ判定 ---
+                // 誤爆しないスマート・ダブルタップ判定
                 wrapper.addEventListener('click', (e) => {
                     const currentTime = new Date().getTime();
                     const tapLength = currentTime - lastTapTime;
                     
-                    // 「0.4秒以内」かつ「前回と同じ画像をタップした」場合のみ削除を実行
                     if (tapLength < 400 && tapLength > 0 && lastTapIndex === index) {
                         e.preventDefault();
                         selectedImages.splice(index, 1);
                         renderPreview();
-                        lastTapTime = 0; // 連続削除を防ぐためにリセット
+                        lastTapTime = 0; 
                         return;
                     }
                     
@@ -254,18 +252,18 @@
                 previewContainer.appendChild(wrapper);
             });
 
-            // --- SortableJSの初期化（スマホ特化の設定） ---
+            // SortableJSの初期化
             sortableInstance = new Sortable(previewContainer, {
                 animation: 150,
                 ghostClass: 'sortable-ghost',
-                delay: 150, // スマホでは0.15秒長押ししてからドラッグ開始
-                delayOnTouchOnly: true, // PCのマウス操作には遅延をかけない
-                fallbackTolerance: 5, // 5px以上指が動いたらスクロールと判定してドラッグをキャンセル
+                delay: 150, 
+                delayOnTouchOnly: true, 
+                fallbackTolerance: 5, 
                 onEnd: function (evt) {
                     if (evt.oldIndex !== evt.newIndex) {
                         const movedItem = selectedImages.splice(evt.oldIndex, 1)[0];
                         selectedImages.splice(evt.newIndex, 0, movedItem);
-                        renderPreview(); // 削除処理（index）がズレないように配列の並び替え後に再描画
+                        renderPreview(); 
                     }
                 }
             });
@@ -354,13 +352,42 @@
         }
 
         function exportProject() {
-            if (selectedImages.length === 0) { alert("保存するデータがありません。"); return; }
+            if (selectedImages.length === 0) { 
+                alert("保存するデータがありません。"); 
+                return; 
+            }
+
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const defaultName = `${yyyy}${mm}${dd}${hh}${min}`; // 例: 202609081110
+
+            // ファイル名の入力
+            let fileName = prompt("保存するファイル名を入力してください。\n（未入力の場合は日時のファイル名になります）", "");
+
+            // 中断
+            if (fileName === null) return;
+
+            // デフォルト
+            fileName = fileName.trim();
+            if (fileName === "") {
+                fileName = defaultName;
+            }
+
+            // 末尾に .gridprj が無ければ追加する
+            if (!fileName.endsWith('.gridprj')) {
+                fileName += '.gridprj';
+            }
+
             const dataStr = JSON.stringify(getProjectData());
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `project_${new Date().getTime()}.gridprj`;
+            link.download = fileName; // 決定したファイル名を設定
             link.click();
             URL.revokeObjectURL(url);
         }
