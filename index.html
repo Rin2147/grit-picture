@@ -5,7 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>画像グリッド配置ツール</title>
     <link rel="icon" href="img/favicon.png" type="image/png">
+    
+    <!-- ドラッグ移動用ライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- PDF書き出し用ライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- PSD書き出し用ライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-psd@14.3.0/dist/bundle.js"></script>
+
     <style>
         /* 全体の基本設定 */
         * { box-sizing: border-box; }
@@ -32,6 +39,30 @@
         .btn-success { background: #28a745; }
         .btn-warning { background: #ffc107; color: black; }
         .btn-info { background: #17a2b8; }
+
+        /* 💡 ダウンロードボタンとプルダウンの結合デザイン */
+        .download-group {
+            display: flex;
+            align-items: stretch;
+        }
+        .download-group button {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            margin: 0;
+        }
+        .download-group select {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border: 1px solid #218838;
+            background: #218838;
+            color: white;
+            font-weight: bold;
+            padding: 0 10px;
+            cursor: pointer;
+            outline: none;
+            border-radius: 0 4px 4px 0;
+        }
+        .download-group select:hover { background: #1e7e34; }
         
         /* ドラッグ＆ドロップエリア */
         #drop-zone { border: 2px dashed #bbb; padding: 20px; text-align: center; border-radius: 8px; background: #fafafa; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
@@ -42,28 +73,14 @@
         #preview-container { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; min-height: 80px; background: white; padding: 20px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
         /* プレビュー画像ラッパー */
-        .preview-wrapper {
-            position: relative;
-            width: 64px;
-            height: 64px;
-            cursor: grab;
-        }
+        .preview-wrapper { position: relative; width: 64px; height: 64px; cursor: grab; }
         .preview-wrapper:active { cursor: grabbing; }
         
         .preview-item { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-            border: 2px solid transparent; 
-            border-radius: 4px; 
-            background: #f9f9f9;
-            /* スマホの長押しメニューを完全無効化 */
-            pointer-events: none; 
-            user-select: none;
-            -webkit-touch-callout: none;
+            width: 100%; height: 100%; object-fit: contain; border: 2px solid transparent; 
+            border-radius: 4px; background: #f9f9f9; pointer-events: none; 
+            user-select: none; -webkit-touch-callout: none;
         }
-
-        /* 移動中の半透明スタイル */
         .sortable-ghost { opacity: 0.4; background-color: #e1f5fe; border-radius: 4px; transform: scale(1.05); }
 
         /* キャンバスエリア */
@@ -75,7 +92,7 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
         .top-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
-        /* スマホ用デザイン */
+        /* スマホ用レスポンシブデザイン */
         @media screen and (max-width: 768px) {
             body { flex-direction: column; padding: 10px; gap: 15px; }
             .sidebar { width: 100%; max-height: 300px; order: 2; }
@@ -83,11 +100,13 @@
             .top-bar { flex-direction: column; align-items: stretch; }
             .top-buttons { justify-content: stretch; }
             .top-buttons button { flex: 1; text-align: center; padding: 12px 10px; font-size: 0.9em; }
-            .controls { flex-direction: row; justify-content: space-between; padding: 15px; }
+            .controls { flex-direction: row; justify-content: space-between; padding: 15px; gap: 10px; }
             .control-group { flex: 1 1 45%; }
             .control-group input[type="number"] { width: 100%; }
             .flex-spacer { display: none; }
             .controls > button { width: 100%; margin-top: 5px; padding: 15px; }
+            .download-group { width: 100%; margin-top: 5px; }
+            .download-group button { flex: 1; padding: 15px; }
             #drop-zone { padding: 30px 15px; }
         }
     </style>
@@ -99,7 +118,7 @@
             <h2 style="margin:0; font-size: 1.4em;">画像グリッド配置ツール</h2>
             <div class="top-buttons">
                 <button class="btn-info" onclick="document.getElementById('importFile').click()">📂 開く</button>
-                <button class="btn-warning" onclick="exportProject()">💾 保存</button>
+                <button class="btn-warning" onclick="exportProject()">💾 プロジェクト保存</button>
                 <input type="file" id="importFile" accept=".gridprj" style="display: none;" onchange="importProject(event)">
             </div>
         </div>
@@ -109,17 +128,16 @@
             <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
         </div>
 
-        <!-- プレビューエリア（操作説明を追加） -->
-        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">※長押しで移動、ダブルタップで削除</div>
+        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">※画像はドラッグ(長押し)で移動、ダブルタップで削除できます</div>
         <div id="preview-container"></div>
 
         <div class="controls">
             <div class="control-group">
-                <label>列数 (横)</label>
+                <label>列数(横)</label>
                 <input type="number" id="cols" value="10" min="1">
             </div>
             <div class="control-group">
-                <label>行数 (縦)</label>
+                <label>行数(縦)</label>
                 <input type="number" id="rows" value="10" min="1">
             </div>
             <div class="control-group">
@@ -135,8 +153,20 @@
                 <input type="number" id="gapY" value="10" min="0">
             </div>
             <div class="flex-spacer"></div>
-            <button onclick="generateGrid()">▶ 画像を生成＆履歴に保存</button>
-            <button onclick="downloadCanvas()" class="btn-success">⬇ ダウンロード(PNG)</button>
+            
+            <button onclick="generateGrid()">▶ 生成＆履歴保存</button>
+            
+            <!-- 💡 ダウンロードボタングループ -->
+            <div class="download-group">
+                <button onclick="downloadGrid()" class="btn-success">⬇ 保存</button>
+                <select id="exportFormat">
+                    <option value="png">PNG</option>
+                    <option value="jpg">JPG</option>
+                    <option value="pdf">PDF</option>
+                    <option value="psd">PSD</option>
+                </select>
+            </div>
+
         </div>
 
         <div id="canvas-container">
@@ -231,7 +261,6 @@
                 img.src = imgData.dataUrl;
                 img.className = 'preview-item';
 
-                // 誤爆しないスマート・ダブルタップ判定
                 wrapper.addEventListener('click', (e) => {
                     const currentTime = new Date().getTime();
                     const tapLength = currentTime - lastTapTime;
@@ -252,7 +281,6 @@
                 previewContainer.appendChild(wrapper);
             });
 
-            // SortableJSの初期化
             sortableInstance = new Sortable(previewContainer, {
                 animation: 150,
                 ghostClass: 'sortable-ghost',
@@ -317,12 +345,179 @@
             saveToHistory({ cols, rows, margin, gapX, gapY });
         }
 
-        function downloadCanvas() {
-            if(selectedImages.length === 0) return;
-            const link = document.createElement('a');
-            link.download = 'grid_image.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
+        // --- 現在の日時からデフォルトのファイル名を作成する関数 ---
+        function getDefaultFileName() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            return `${yyyy}${mm}${dd}${hh}${min}`;
+        }
+
+        // --- ★ 各フォーマットでのダウンロード書き出し処理 ★ ---
+        async function downloadGrid() {
+            if (selectedImages.length === 0) {
+                alert("書き出す画像がありません。");
+                return;
+            }
+
+            const format = document.getElementById('exportFormat').value;
+            const defaultName = getDefaultFileName();
+            
+            // キャンバスが生成されていない場合を考慮して強制生成
+            await generateGrid(); 
+
+            if (format === 'png') {
+                const link = document.createElement('a');
+                link.download = `${defaultName}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } 
+            else if (format === 'jpg') {
+                const link = document.createElement('a');
+                link.download = `${defaultName}.jpg`;
+                // JPGは背景が透過されないため、canvasに白背景が塗られている現在の仕様でそのまま出力可能（品質0.9）
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.click();
+            }
+            else if (format === 'pdf') {
+                // PDF出力 (要素を分ける)
+                try {
+                    const { jsPDF } = window.jspdf;
+                    // キャンバスのサイズに合わせてPDFドキュメントを作成
+                    const pdf = new jsPDF({
+                        orientation: canvas.width > canvas.height ? 'l' : 'p',
+                        unit: 'px',
+                        format: [canvas.width, canvas.height]
+                    });
+
+                    // 背景を白で塗りつぶし
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.rect(0, 0, canvas.width, canvas.height, 'F');
+
+                    const cols = parseInt(document.getElementById('cols').value, 10);
+                    const rows = parseInt(document.getElementById('rows').value, 10);
+                    const margin = parseInt(document.getElementById('margin').value, 10);
+                    const gapX = parseInt(document.getElementById('gapX').value, 10);
+                    const gapY = parseInt(document.getElementById('gapY').value, 10);
+
+                    const images = await Promise.all(selectedImages.map(img => loadImage(img.dataUrl)));
+                    const cellWidth = images[0].width;
+                    const cellHeight = images[0].height;
+
+                    // 各画像を独立した要素としてPDFに追加
+                    images.forEach((img, index) => {
+                        if (index >= cols * rows) return;
+                        
+                        const baseX = margin + (index % cols) * (cellWidth + gapX);
+                        const baseY = margin + Math.floor(index / cols) * (cellHeight + gapY);
+
+                        let scale = Math.min(cellWidth / img.width, cellHeight / img.height);
+                        if (scale > 1) scale = 1;
+
+                        const drawWidth = img.width * scale;
+                        const drawHeight = img.height * scale;
+                        const offsetX = (cellWidth - drawWidth) / 2;
+                        const offsetY = (cellHeight - drawHeight) / 2;
+
+                        // 画像のフォーマットを判定(簡易的)
+                        const imgFormat = img.src.indexOf('image/jpeg') !== -1 ? 'JPEG' : 'PNG';
+                        
+                        pdf.addImage(img.src, imgFormat, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
+                    });
+
+                    pdf.save(`${defaultName}.pdf`);
+                } catch (e) {
+                    alert("PDFの生成に失敗しました。ライブラリが正しく読み込まれているか確認してください。");
+                    console.error(e);
+                }
+            }
+            else if (format === 'psd') {
+                // PSD出力 (レイヤーを分ける)
+                try {
+                    if (!window.agPsd) {
+                        alert("PSD書き出し用ライブラリが読み込まれていません。");
+                        return;
+                    }
+
+                    const cols = parseInt(document.getElementById('cols').value, 10);
+                    const rows = parseInt(document.getElementById('rows').value, 10);
+                    const margin = parseInt(document.getElementById('margin').value, 10);
+                    const gapX = parseInt(document.getElementById('gapX').value, 10);
+                    const gapY = parseInt(document.getElementById('gapY').value, 10);
+                    
+                    const images = await Promise.all(selectedImages.map(img => loadImage(img.dataUrl)));
+                    const cellWidth = images[0].width;
+                    const cellHeight = images[0].height;
+
+                    // 背景レイヤー用のキャンバスを作成
+                    const bgCanvas = document.createElement('canvas');
+                    bgCanvas.width = canvas.width;
+                    bgCanvas.height = canvas.height;
+                    const bgCtx = bgCanvas.getContext('2d');
+                    bgCtx.fillStyle = '#ffffff';
+                    bgCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // PSDの基本構造
+                    const psdData = {
+                        width: canvas.width,
+                        height: canvas.height,
+                        children: [
+                            {
+                                name: '背景',
+                                canvas: bgCanvas
+                            }
+                        ]
+                    };
+
+                    // 各画像を独立したレイヤー（キャンバス）として追加
+                    images.forEach((img, index) => {
+                        if (index >= cols * rows) return;
+                        
+                        const baseX = margin + (index % cols) * (cellWidth + gapX);
+                        const baseY = margin + Math.floor(index / cols) * (cellHeight + gapY);
+
+                        let scale = Math.min(cellWidth / img.width, cellHeight / img.height);
+                        if (scale > 1) scale = 1;
+
+                        const drawWidth = img.width * scale;
+                        const drawHeight = img.height * scale;
+                        const offsetX = (cellWidth - drawWidth) / 2;
+                        const offsetY = (cellHeight - drawHeight) / 2;
+
+                        // このレイヤー専用の透明なキャンバスを作成
+                        const layerCanvas = document.createElement('canvas');
+                        layerCanvas.width = canvas.width;
+                        layerCanvas.height = canvas.height;
+                        const layerCtx = layerCanvas.getContext('2d');
+                        
+                        // 所定の位置に画像を描画
+                        layerCtx.drawImage(img, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
+
+                        // レイヤーとして追加
+                        psdData.children.push({
+                            name: `画像 ${index + 1}`,
+                            canvas: layerCanvas
+                        });
+                    });
+
+                    // ArrayBufferとしてPSDデータを生成
+                    const buffer = agPsd.writePsd(psdData);
+                    const blob = new Blob([buffer], { type: 'application/octet-stream' });
+                    
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `${defaultName}.psd`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+
+                } catch (e) {
+                    alert("PSDの生成に失敗しました。");
+                    console.error(e);
+                }
+            }
         }
 
         function getProjectData() {
@@ -357,27 +552,16 @@
                 return; 
             }
 
-            const now = new Date();
-            const yyyy = now.getFullYear();
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const hh = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const defaultName = `${yyyy}${mm}${dd}${hh}${min}`; // 例: 202609081110
-
-            // ファイル名の入力
+            const defaultName = getDefaultFileName();
             let fileName = prompt("保存するファイル名を入力してください。\n（未入力の場合は日時のファイル名になります）", "");
 
-            // 中断
             if (fileName === null) return;
 
-            // デフォルト
             fileName = fileName.trim();
             if (fileName === "") {
                 fileName = defaultName;
             }
 
-            // 末尾に .gridprj が無ければ追加する
             if (!fileName.endsWith('.gridprj')) {
                 fileName += '.gridprj';
             }
@@ -387,7 +571,7 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = fileName; // 決定したファイル名を設定
+            link.download = fileName;
             link.click();
             URL.revokeObjectURL(url);
         }
