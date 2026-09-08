@@ -6,7 +6,7 @@
     <title>画像グリッド配置ツール</title>
     <link rel="icon" href="img/favicon.png" type="image/png">
     <style>
-        /* 全体の基本設定（box-sizingを追加して幅計算を安定化） */
+        /* 全体の基本設定 */
         * { box-sizing: border-box; }
         body { font-family: sans-serif; padding: 20px; background-color: #f0f2f5; margin: 0; display: flex; gap: 20px; }
         
@@ -39,8 +39,24 @@
 
         /* プレビューエリア */
         #preview-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; min-height: 80px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .preview-item { width: 60px; height: 60px; object-fit: contain; cursor: grab; border: 2px solid transparent; border-radius: 4px; background: #f9f9f9; }
+        
+        /* プレビュー画像（スマホの長押しメニュー対策を追加） */
+        .preview-item { 
+            width: 60px; height: 60px; object-fit: contain; cursor: pointer; 
+            border: 2px solid transparent; border-radius: 4px; background: #f9f9f9;
+            -webkit-touch-callout: none; /* iOSの長押しメニューを無効化 */
+            user-select: none;           /* テキスト選択を無効化 */
+            transition: 0.1s;
+        }
         .preview-item.drag-over { border-color: #ff3b30; opacity: 0.5; transform: scale(1.05); }
+        
+        /* スマホ・PC共通のタップ選択時のスタイル */
+        .preview-item.selected {
+            border-color: #007bff;
+            opacity: 0.8;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(0,123,255,0.5);
+        }
 
         /* キャンバスエリア */
         #canvas-container { overflow: auto; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; max-height: 50vh; text-align: center; }
@@ -51,58 +67,20 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
         .top-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
-        /* =========================================
-           スマホ用レスポンシブデザイン (横幅768px以下)
-           ========================================= */
+        /* スマホ用レスポンシブデザイン */
         @media screen and (max-width: 768px) {
-            body { 
-                flex-direction: column; /* 横並びから縦並びに変更 */
-                padding: 10px; 
-                gap: 15px; 
-            }
-            .sidebar { 
-                width: 100%; /* サイドバーを横幅いっぱいに */
-                max-height: 300px; /* 縦長になりすぎないように制限 */
-                order: 2; /* メインコンテンツの下に配置 */
-            }
-            .main-content {
-                order: 1;
-            }
-            .top-bar { 
-                flex-direction: column; 
-                align-items: stretch; 
-            }
-            .top-buttons {
-                justify-content: stretch;
-            }
-            .top-buttons button { 
-                flex: 1; /* ボタンを横幅いっぱいに広げる */
-                text-align: center;
-                padding: 12px 10px;
-                font-size: 0.9em;
-            }
-            .controls { 
-                flex-direction: row; 
-                justify-content: space-between; 
-                padding: 15px;
-            }
-            .control-group { 
-                flex: 1 1 45%; /* 入力欄を2列に並べる */
-            }
-            .control-group input[type="number"] { 
-                width: 100%; 
-            }
-            .flex-spacer { 
-                display: none; 
-            }
-            .controls > button { 
-                width: 100%; /* 生成・ダウンロードボタンを大きく */
-                margin-top: 5px;
-                padding: 15px;
-            }
-            #drop-zone {
-                padding: 30px 15px;
-            }
+            body { flex-direction: column; padding: 10px; gap: 15px; }
+            .sidebar { width: 100%; max-height: 300px; order: 2; }
+            .main-content { order: 1; }
+            .top-bar { flex-direction: column; align-items: stretch; }
+            .top-buttons { justify-content: stretch; }
+            .top-buttons button { flex: 1; text-align: center; padding: 12px 10px; font-size: 0.9em; }
+            .controls { flex-direction: row; justify-content: space-between; padding: 15px; }
+            .control-group { flex: 1 1 45%; }
+            .control-group input[type="number"] { width: 100%; }
+            .flex-spacer { display: none; }
+            .controls > button { width: 100%; margin-top: 5px; padding: 15px; }
+            #drop-zone { padding: 30px 15px; }
         }
     </style>
 </head>
@@ -162,11 +140,10 @@
     </div>
 
     <script>
-        // --- 状態管理 ---
         let selectedImages = [];
         let dragStartIndex = -1;
+        let selectedItemIndex = -1; // タップ選択用の状態管理
 
-        // UI要素
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('imageInput');
         const previewContainer = document.getElementById('preview-container');
@@ -174,7 +151,6 @@
         const ctx = canvas.getContext('2d');
         const historyList = document.getElementById('history-list');
 
-        // --- データベース (IndexedDB) ---
         const DB_NAME = 'GridToolDB';
         const DB_VERSION = 1;
         const STORE_NAME = 'history';
@@ -224,10 +200,13 @@
 
         function renderPreview() {
             previewContainer.innerHTML = '';
+            selectedItemIndex = -1; // プレビュー再描画時に選択状態をリセット
+
             if (selectedImages.length === 0) {
                 previewContainer.innerHTML = '<span style="color:#999; font-size: 0.9em;">画像がありません。</span>';
                 return;
             }
+
             selectedImages.forEach((imgData, index) => {
                 const img = document.createElement('img');
                 img.src = imgData.dataUrl;
@@ -235,6 +214,7 @@
                 img.draggable = true;
                 img.dataset.index = index;
                 
+                // --- PC用のドラッグ＆ドロップ（そのまま残す） ---
                 img.addEventListener('dragstart', (e) => dragStartIndex = +e.target.dataset.index);
                 img.addEventListener('dragover', (e) => e.preventDefault());
                 img.addEventListener('dragenter', (e) => { e.preventDefault(); e.target.classList.add('drag-over'); });
@@ -248,6 +228,28 @@
                         renderPreview();
                     }
                 });
+
+                // --- スマホ・PC両用の「タップして入れ替え」 ---
+                img.addEventListener('click', (e) => {
+                    const clickedIndex = +e.target.dataset.index;
+                    
+                    if (selectedItemIndex === -1) {
+                        // 1回目のタップ：選択状態にする
+                        selectedItemIndex = clickedIndex;
+                        e.target.classList.add('selected');
+                    } else if (selectedItemIndex === clickedIndex) {
+                        // 同じ画像をもう一度タップ：選択を解除
+                        selectedItemIndex = -1;
+                        e.target.classList.remove('selected');
+                    } else {
+                        // 2回目のタップ：選択した画像と場所を入れ替える（スワップ）
+                        const temp = selectedImages[selectedItemIndex];
+                        selectedImages[selectedItemIndex] = selectedImages[clickedIndex];
+                        selectedImages[clickedIndex] = temp;
+                        renderPreview();
+                    }
+                });
+
                 img.title = "ダブルクリックで削除";
                 img.addEventListener('dblclick', () => { selectedImages.splice(index, 1); renderPreview(); });
                 previewContainer.appendChild(img);
