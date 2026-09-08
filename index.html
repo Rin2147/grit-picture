@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>画像グリッド配置ツール</title>
     <link rel="icon" href="img/favicon.png" type="image/png">
-    <!-- スマホでのスワイプ移動を可能にするライブラリを読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         /* 全体の基本設定 */
@@ -42,13 +41,12 @@
         /* プレビューエリア */
         #preview-container { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; min-height: 80px; background: white; padding: 20px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
-        /* --- プレビュー画像の新しいスタイル --- */
+        /* プレビュー画像ラッパー */
         .preview-wrapper {
             position: relative;
             width: 64px;
             height: 64px;
             cursor: grab;
-            touch-action: none; /* スワイプ時の画面スクロールを防止 */
         }
         .preview-wrapper:active { cursor: grabbing; }
         
@@ -59,36 +57,14 @@
             border: 2px solid transparent; 
             border-radius: 4px; 
             background: #f9f9f9;
-            /* ★最重要：スマホの長押しメニューを完全無効化 */
+            /* スマホの長押しメニューを完全無効化 */
             pointer-events: none; 
             user-select: none;
             -webkit-touch-callout: none;
         }
-        
-        /* 削除用×ボタン */
-        .delete-badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #ff3b30;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            font-size: 14px;
-            font-weight: bold;
-            line-height: 1;
-            text-align: center;
-            cursor: pointer;
-            padding: 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 10;
-        }
-        .delete-badge:hover { background: #d32f2f; transform: scale(1.1); }
 
         /* 移動中の半透明スタイル */
-        .sortable-ghost { opacity: 0.4; background-color: #e1f5fe; border-radius: 4px; }
+        .sortable-ghost { opacity: 0.4; background-color: #e1f5fe; border-radius: 4px; transform: scale(1.05); }
 
         /* キャンバスエリア */
         #canvas-container { overflow: auto; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; max-height: 50vh; text-align: center; }
@@ -133,6 +109,8 @@
             <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
         </div>
 
+        <!-- プレビューエリア（操作説明を追加） -->
+        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">※画像はドラッグ(長押し)で移動、ダブルタップで削除できます</div>
         <div id="preview-container"></div>
 
         <div class="controls">
@@ -173,7 +151,11 @@
 
     <script>
         let selectedImages = [];
-        let sortableInstance = null; // SortableJSのインスタンスを保持
+        let sortableInstance = null;
+        
+        // --- 厳密なダブルタップ判定のための変数 ---
+        let lastTapIndex = -1;
+        let lastTapTime = 0;
 
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('imageInput');
@@ -232,7 +214,6 @@
         function renderPreview() {
             previewContainer.innerHTML = '';
             
-            // 既存のSortableインスタンスがあれば破棄する
             if (sortableInstance) {
                 sortableInstance.destroy();
             }
@@ -243,7 +224,6 @@
             }
 
             selectedImages.forEach((imgData, index) => {
-                // 画像を包むラッパー（これがドラッグ操作の対象になる）
                 const wrapper = document.createElement('div');
                 wrapper.className = 'preview-wrapper';
                 wrapper.dataset.index = index;
@@ -252,32 +232,40 @@
                 img.src = imgData.dataUrl;
                 img.className = 'preview-item';
 
-                // 削除用バッジボタン
-                const delBtn = document.createElement('button');
-                delBtn.className = 'delete-badge';
-                delBtn.innerHTML = '×';
-                delBtn.onclick = (e) => {
-                    e.stopPropagation(); // ドラッグ操作の誤爆を防ぐ
-                    selectedImages.splice(index, 1);
-                    renderPreview();
-                };
+                // --- 誤爆しないスマート・ダブルタップ判定 ---
+                wrapper.addEventListener('click', (e) => {
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTapTime;
+                    
+                    // 「0.4秒以内」かつ「前回と同じ画像をタップした」場合のみ削除を実行
+                    if (tapLength < 400 && tapLength > 0 && lastTapIndex === index) {
+                        e.preventDefault();
+                        selectedImages.splice(index, 1);
+                        renderPreview();
+                        lastTapTime = 0; // 連続削除を防ぐためにリセット
+                        return;
+                    }
+                    
+                    lastTapIndex = index;
+                    lastTapTime = currentTime;
+                });
 
                 wrapper.appendChild(img);
-                wrapper.appendChild(delBtn);
                 previewContainer.appendChild(wrapper);
             });
 
-            // --- SortableJSの初期化（スマホのスワイプ移動・押し出し移動を可能にする） ---
+            // --- SortableJSの初期化（スマホ特化の設定） ---
             sortableInstance = new Sortable(previewContainer, {
-                animation: 150, // 押し出し時のアニメーション速度(ms)
+                animation: 150,
                 ghostClass: 'sortable-ghost',
+                delay: 150, // スマホでは0.15秒長押ししてからドラッグ開始
+                delayOnTouchOnly: true, // PCのマウス操作には遅延をかけない
+                fallbackTolerance: 5, // 5px以上指が動いたらスクロールと判定してドラッグをキャンセル
                 onEnd: function (evt) {
                     if (evt.oldIndex !== evt.newIndex) {
-                        // 配列の中身を押し出し式（挿入）で更新する
                         const movedItem = selectedImages.splice(evt.oldIndex, 1)[0];
                         selectedImages.splice(evt.newIndex, 0, movedItem);
-                        // indexを正確に振り直すため再描画
-                        renderPreview();
+                        renderPreview(); // 削除処理（index）がズレないように配列の並び替え後に再描画
                     }
                 }
             });
