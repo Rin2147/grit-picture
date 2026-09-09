@@ -14,14 +14,14 @@
     <script src="https://cdn.jsdelivr.net/npm/ag-psd@14.3.0/dist/bundle.js"></script>
 
     <style>
-        /* 全体の基本設定 */
+        /* 基本設定 */
         * { box-sizing: border-box; }
         body { font-family: sans-serif; padding: 20px; background-color: #f0f2f5; margin: 0; display: flex; gap: 20px; }
         
         /* メインエリア */
         .main-content { flex: 1; min-width: 0; }
         
-        /* サイドバー（履歴エリア） */
+        /* サイドバー */
         .sidebar { width: 250px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; max-height: calc(100vh - 40px); overflow-y: auto; flex-shrink: 0; }
         .history-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
         .history-item:hover { background: #f8f9fa; }
@@ -39,8 +39,7 @@
         .btn-success { background: #28a745; }
         .btn-warning { background: #ffc107; color: black; }
         .btn-info { background: #17a2b8; }
-
-        /* 💡 ダウンロードボタンとプルダウンの結合デザイン */
+        
         .download-group {
             display: flex;
             align-items: stretch;
@@ -128,7 +127,7 @@
             <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
         </div>
 
-        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">※画像はドラッグ(長押し)で移動、ダブルタップで削除できます</div>
+        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">ドラッグで移動、ダブルタップで削除</div>
         <div id="preview-container"></div>
 
         <div class="controls">
@@ -345,7 +344,6 @@
             saveToHistory({ cols, rows, margin, gapX, gapY });
         }
 
-        // --- 現在の日時からデフォルトのファイル名を作成する関数 ---
         function getDefaultFileName() {
             const now = new Date();
             const yyyy = now.getFullYear();
@@ -356,7 +354,6 @@
             return `${yyyy}${mm}${dd}${hh}${min}`;
         }
 
-        // --- ★ 各フォーマットでのダウンロード書き出し処理 ★ ---
         async function downloadGrid() {
             if (selectedImages.length === 0) {
                 alert("書き出す画像がありません。");
@@ -366,7 +363,6 @@
             const format = document.getElementById('exportFormat').value;
             const defaultName = getDefaultFileName();
             
-            // キャンバスが生成されていない場合を考慮して強制生成
             await generateGrid(); 
 
             if (format === 'png') {
@@ -378,15 +374,12 @@
             else if (format === 'jpg') {
                 const link = document.createElement('a');
                 link.download = `${defaultName}.jpg`;
-                // JPGは背景が透過されないため、canvasに白背景が塗られている現在の仕様でそのまま出力可能（品質0.9）
                 link.href = canvas.toDataURL('image/jpeg', 0.9);
                 link.click();
             }
             else if (format === 'pdf') {
-                // PDF出力 (要素を分ける)
                 try {
                     const { jsPDF } = window.jspdf;
-                    // キャンバスのサイズに合わせてPDFドキュメントを作成
                     const pdf = new jsPDF({
                         orientation: canvas.width > canvas.height ? 'l' : 'p',
                         unit: 'px',
@@ -407,7 +400,6 @@
                     const cellWidth = images[0].width;
                     const cellHeight = images[0].height;
 
-                    // 各画像を独立した要素としてPDFに追加
                     images.forEach((img, index) => {
                         if (index >= cols * rows) return;
                         
@@ -422,7 +414,6 @@
                         const offsetX = (cellWidth - drawWidth) / 2;
                         const offsetY = (cellHeight - drawHeight) / 2;
 
-                        // 画像のフォーマットを判定(簡易的)
                         const imgFormat = img.src.indexOf('image/jpeg') !== -1 ? 'JPEG' : 'PNG';
                         
                         pdf.addImage(img.src, imgFormat, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
@@ -435,7 +426,6 @@
                 }
             }
             else if (format === 'psd') {
-                // PSD出力 (レイヤーを分ける)
                 try {
                     if (!window.agPsd) {
                         alert("PSD書き出し用ライブラリが読み込まれていません。");
@@ -452,7 +442,6 @@
                     const cellWidth = images[0].width;
                     const cellHeight = images[0].height;
 
-                    // 背景レイヤー用のキャンバスを作成
                     const bgCanvas = document.createElement('canvas');
                     bgCanvas.width = canvas.width;
                     bgCanvas.height = canvas.height;
@@ -460,7 +449,6 @@
                     bgCtx.fillStyle = '#ffffff';
                     bgCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-                    // PSDの基本構造
                     const psdData = {
                         width: canvas.width,
                         height: canvas.height,
@@ -472,7 +460,6 @@
                         ]
                     };
 
-                    // 各画像を独立したレイヤー（キャンバス）として追加
                     images.forEach((img, index) => {
                         if (index >= cols * rows) return;
                         
@@ -487,23 +474,19 @@
                         const offsetX = (cellWidth - drawWidth) / 2;
                         const offsetY = (cellHeight - drawHeight) / 2;
 
-                        // このレイヤー専用の透明なキャンバスを作成
                         const layerCanvas = document.createElement('canvas');
                         layerCanvas.width = canvas.width;
                         layerCanvas.height = canvas.height;
                         const layerCtx = layerCanvas.getContext('2d');
                         
-                        // 所定の位置に画像を描画
                         layerCtx.drawImage(img, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
 
-                        // レイヤーとして追加
                         psdData.children.push({
                             name: `画像 ${index + 1}`,
                             canvas: layerCanvas
                         });
                     });
 
-                    // ArrayBufferとしてPSDデータを生成
                     const buffer = agPsd.writePsd(psdData);
                     const blob = new Blob([buffer], { type: 'application/octet-stream' });
                     
