@@ -34,15 +34,18 @@
         .control-group { display: flex; flex-direction: column; }
         label { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; color: #333; }
         input[type="number"] { width: 70px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        select, input[type="text"] { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+        
+        button { padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         button:hover { background: #0056b3; filter: brightness(1.1); }
         .btn-success { background: #28a745; }
         .btn-warning { background: #ffc107; color: black; }
         .btn-info { background: #17a2b8; }
+        .btn-secondary { background: #6c757d; }
 
         /* ダウンロードボタンとプルダウンの結合デザイン */
         .download-group { display: flex; align-items: stretch; }
-        .download-group button { border-top-right-radius: 0; border-bottom-right-radius: 0; margin: 0; }
+        .download-group button { border-top-right-radius: 0; border-bottom-right-radius: 0; margin: 0; padding: 10px 15px; }
         .download-group select {
             border-top-left-radius: 0; border-bottom-left-radius: 0; border: 1px solid #218838;
             background: #218838; color: white; font-weight: bold; padding: 0 10px; cursor: pointer;
@@ -66,6 +69,7 @@
         }
         .sortable-ghost { opacity: 0.4; background-color: #e1f5fe; border-radius: 4px; transform: scale(1.05); }
 
+        /* 特殊アクションボタン（空白・改行） */
         .special-actions { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 20px; }
         .special-btn { 
             display: flex; align-items: center; justify-content: center; gap: 8px; 
@@ -73,7 +77,7 @@
             border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; 
         }
         .special-btn:hover { background: #dde2e6; }
-        .special-btn img { width: 40px; height: 40px; object-fit: contain; }
+        .special-btn img { width: 40px; height:40px; object-fit: contain; }
 
         /* キャンバスエリア */
         #canvas-container { overflow: auto; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; max-height: 50vh; text-align: center; }
@@ -92,9 +96,8 @@
             .top-bar { flex-direction: column; align-items: stretch; }
             .top-buttons { justify-content: stretch; }
             .top-buttons button { flex: 1; text-align: center; padding: 12px 10px; font-size: 0.9em; }
-            .controls { flex-direction: row; justify-content: space-between; padding: 15px; gap: 10px; }
-            .control-group { flex: 1 1 45%; }
-            .control-group input[type="number"] { width: 100%; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .control-group { flex-direction: column; align-items: flex-start; margin-bottom: 10px; }
             .flex-spacer { display: none; }
             .controls > button { width: 100%; margin-top: 5px; padding: 15px; }
             .download-group { width: 100%; margin-top: 5px; }
@@ -134,30 +137,47 @@
             </button>
         </div>
 
+        <!-- 💡 コントロールパネルのUIを改善 -->
         <div class="controls">
+            
             <div class="control-group">
-                <label>列数(横)</label>
-                <input type="number" id="cols" value="10" min="1">
+                <label>列数と行数</label>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <input type="number" id="cols" value="10" min="1" title="列数(横)" style="width: 60px;">
+                    <button class="btn-secondary" onclick="swapColsRows()" title="列数と行数を入れ替える" style="padding: 6px;">⇔</button>
+                    <input type="number" id="rows" value="10" min="1" title="行数(縦)" style="width: 60px;">
+                    <button class="btn-info" onclick="adjustRows()" title="現在の画像数に合わせて行数を自動計算" style="padding: 6px 10px;">自動計算</button>
+                </div>
             </div>
+
             <div class="control-group">
-                <label>行数(縦)</label>
-                <input type="number" id="rows" value="10" min="1">
+                <label>比率を指定して生成</label>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <select id="aspectRatio" onchange="toggleCustomRatio()">
+                        <option value="none">指定なし</option>
+                        <option value="1:1">1:1</option>
+                        <option value="16:9">16:9</option>
+                        <option value="9:16">9:16</option>
+                        <option value="4:3">4:3</option>
+                        <option value="3:4">3:4</option>
+                        <option value="custom">カスタム</option>
+                    </select>
+                    <input type="text" id="customRatio" placeholder="例: 2:1" style="display:none; width:70px;">
+                </div>
             </div>
+
             <div class="control-group">
-                <label>外側余白</label>
-                <input type="number" id="margin" value="20" min="0">
+                <label>余白・間隔</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" id="margin" value="20" min="0" placeholder="外余白" title="外側余白" style="width: 55px;">
+                    <input type="number" id="gapX" value="10" min="0" placeholder="横間隔" title="横間隔" style="width: 55px;">
+                    <input type="number" id="gapY" value="10" min="0" placeholder="縦間隔" title="縦間隔" style="width: 55px;">
+                </div>
             </div>
-            <div class="control-group">
-                <label>横間隔</label>
-                <input type="number" id="gapX" value="10" min="0">
-            </div>
-            <div class="control-group">
-                <label>縦間隔</label>
-                <input type="number" id="gapY" value="10" min="0">
-            </div>
+
             <div class="flex-spacer"></div>
             
-            <button onclick="generateGrid()">▶ 生成＆履歴保存</button>
+            <button onclick="generateGrid()" style="padding: 10px 15px;">▶ 生成＆履歴保存</button>
             
             <div class="download-group">
                 <button onclick="downloadGrid()" class="btn-success">⬇ 保存</button>
@@ -236,7 +256,6 @@
             for (let file of files) {
                 if (file.type.startsWith('image/')) {
                     const dataUrl = await fileToBase64(file);
-                    // 通常の画像は type: 'image' として登録
                     selectedImages.push({ type: 'image', dataUrl: dataUrl });
                 }
             }
@@ -250,6 +269,55 @@
                 selectedImages.push({ type: 'newline', dataUrl: 'img/改行.png' });
             }
             renderPreview();
+        }
+
+        // 💡 縦と横を入れ替える機能
+        function swapColsRows() {
+            const colsInput = document.getElementById('cols');
+            const rowsInput = document.getElementById('rows');
+            const temp = colsInput.value;
+            colsInput.value = rowsInput.value;
+            rowsInput.value = temp;
+        }
+
+        // 💡 実際のアイテム数・改行位置に基づいて行数を自動計算する機能
+        function adjustRows() {
+            if (selectedImages.length === 0) return;
+            const cols = parseInt(document.getElementById('cols').value, 10);
+            
+            let col = 0;
+            let row = 0;
+            
+            for (let i = 0; i < selectedImages.length; i++) {
+                const type = selectedImages[i].type || 'image';
+                
+                if (type === 'newline') {
+                    row++;
+                    col = 0;
+                    continue;
+                }
+                
+                if (col >= cols) {
+                    row++;
+                    col = 0;
+                }
+                
+                col++;
+            }
+            
+            const neededRows = (col > 0) ? row + 1 : row;
+            document.getElementById('rows').value = neededRows || 1;
+        }
+
+        // 💡 カスタム比率の入力欄を表示・非表示にする
+        function toggleCustomRatio() {
+            const select = document.getElementById('aspectRatio');
+            const customInput = document.getElementById('customRatio');
+            if (select.value === 'custom') {
+                customInput.style.display = 'block';
+            } else {
+                customInput.style.display = 'none';
+            }
         }
 
         function renderPreview() {
@@ -317,14 +385,58 @@
             });
         };
 
-        // 💡 共通の座標・描画計算ロジック
+        // 💡 キャンバスのサイズと「比率による追加余白」を計算する共通関数
+        function calculateGridMetrics(cols, rows, margin, gapX, gapY, cellWidth, cellHeight) {
+            let baseW = margin * 2 + (cols * cellWidth) + ((cols - 1) * gapX);
+            let baseH = margin * 2 + (rows * cellHeight) + ((rows - 1) * gapY);
+
+            let finalW = baseW;
+            let finalH = baseH;
+            let globalOffsetX = 0;
+            let globalOffsetY = 0;
+
+            const ratioSelect = document.getElementById('aspectRatio').value;
+            if (ratioSelect !== 'none') {
+                let targetX, targetY;
+                if (ratioSelect === 'custom') {
+                    const customVal = document.getElementById('customRatio').value;
+                    const parts = customVal.split(':');
+                    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                        targetX = parseFloat(parts[0]);
+                        targetY = parseFloat(parts[1]);
+                    }
+                } else {
+                    const parts = ratioSelect.split(':');
+                    targetX = parseFloat(parts[0]);
+                    targetY = parseFloat(parts[1]);
+                }
+
+                if (targetX && targetY && targetY !== 0) {
+                    const targetRatio = targetX / targetY;
+                    const currentRatio = baseW / baseH;
+
+                    if (currentRatio > targetRatio) {
+                        // 幅が広すぎる（高さが足りない）ため、上下に余白を足して比率を合わせる
+                        finalH = baseW / targetRatio;
+                        globalOffsetY = (finalH - baseH) / 2;
+                    } else {
+                        // 高すぎる（幅が足りない）ため、左右に余白を足して比率を合わせる
+                        finalW = baseH * targetRatio;
+                        globalOffsetX = (finalW - baseW) / 2;
+                    }
+                }
+            }
+
+            return { finalW, finalH, globalOffsetX, globalOffsetY };
+        }
+
+
         async function generateGrid() {
             if (selectedImages.length === 0) { alert("画像を追加してください。"); return; }
 
-            // 基準となる普通の画像を探す（サイズ取得のため）
             const baseItem = selectedImages.find(item => !item.type || item.type === 'image');
             if (!baseItem) {
-                alert("基準となる通常の画像が含まれていません。\n（空白や改行のみでの生成はできません）");
+                alert("基準となる通常の画像が含まれていません。");
                 return;
             }
 
@@ -338,8 +450,10 @@
             const cellWidth = baseImg.width;
             const cellHeight = baseImg.height;
 
-            canvas.width = margin * 2 + (cols * cellWidth) + ((cols - 1) * gapX);
-            canvas.height = margin * 2 + (rows * cellHeight) + ((rows - 1) * gapY);
+            // 比率設定を読み込んで最終的なサイズとオフセットを取得
+            const metrics = calculateGridMetrics(cols, rows, margin, gapX, gapY, cellWidth, cellHeight);
+            canvas.width = metrics.finalW;
+            canvas.height = metrics.finalH;
 
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -347,29 +461,30 @@
             let col = 0;
             let row = 0;
 
-            // 配列を順番に読み込み、空白・改行・画像の処理を分岐
             for (let i = 0; i < selectedImages.length; i++) {
-                if (row >= rows) break; // 設定した行数を超えたら終了
-
                 const item = selectedImages[i];
-                const type = item.type || 'image'; // 古いセーブデータ互換性用
+                const type = item.type || 'image';
 
+                // 💡 修正：列数チェックを最初に行うことで、右端の改行での「見えない行バグ」を解消
                 if (type === 'newline') {
-                    // 改行：列をリセットして次の行へ
-                    col = 0;
                     row++;
+                    col = 0;
                     continue;
                 }
 
+                if (col >= cols) {
+                    row++;
+                    col = 0;
+                }
+
+                if (row >= rows) break; // 設定行数を超えたら終了
+
                 if (type === 'blank') {
-                    // 空白：何も描画せずに列を1つ進める
                     col++;
-                    if (col >= cols) { row++; col = 0; }
                     continue;
                 }
 
                 if (type === 'image') {
-                    // 通常の画像：計算した場所に描画して進める
                     const img = await loadImage(item.dataUrl);
                     
                     const baseX = margin + col * (cellWidth + gapX);
@@ -383,10 +498,16 @@
                     const offsetX = (cellWidth - drawWidth) / 2;
                     const offsetY = (cellHeight - drawHeight) / 2;
 
-                    ctx.drawImage(img, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
+                    // 💡 比率合わせ用のオフセットを追加して描画
+                    ctx.drawImage(
+                        img, 
+                        baseX + offsetX + metrics.globalOffsetX, 
+                        baseY + offsetY + metrics.globalOffsetY, 
+                        drawWidth, 
+                        drawHeight
+                    );
 
                     col++;
-                    if (col >= cols) { row++; col = 0; }
                 }
             }
 
@@ -409,7 +530,6 @@
                 return;
             }
 
-            // 基準となる普通の画像を探す
             const baseItem = selectedImages.find(item => !item.type || item.type === 'image');
             if (!baseItem) {
                 alert("基準となる通常の画像が含まれていません。");
@@ -436,15 +556,7 @@
             else if (format === 'pdf') {
                 try {
                     const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({
-                        orientation: canvas.width > canvas.height ? 'l' : 'p',
-                        unit: 'px',
-                        format: [canvas.width, canvas.height]
-                    });
-
-                    pdf.setFillColor(255, 255, 255);
-                    pdf.rect(0, 0, canvas.width, canvas.height, 'F');
-
+                    
                     const cols = parseInt(document.getElementById('cols').value, 10);
                     const rows = parseInt(document.getElementById('rows').value, 10);
                     const margin = parseInt(document.getElementById('margin').value, 10);
@@ -455,16 +567,28 @@
                     const cellWidth = baseImg.width;
                     const cellHeight = baseImg.height;
 
+                    const metrics = calculateGridMetrics(cols, rows, margin, gapX, gapY, cellWidth, cellHeight);
+
+                    const pdf = new jsPDF({
+                        orientation: metrics.finalW > metrics.finalH ? 'l' : 'p',
+                        unit: 'px',
+                        format: [metrics.finalW, metrics.finalH]
+                    });
+
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.rect(0, 0, metrics.finalW, metrics.finalH, 'F');
+
                     let col = 0;
                     let row = 0;
 
                     for (let i = 0; i < selectedImages.length; i++) {
-                        if (row >= rows) break;
                         const item = selectedImages[i];
                         const type = item.type || 'image';
 
-                        if (type === 'newline') { col = 0; row++; continue; }
-                        if (type === 'blank') { col++; if (col >= cols) { row++; col = 0; } continue; }
+                        if (type === 'newline') { row++; col = 0; continue; }
+                        if (col >= cols) { row++; col = 0; }
+                        if (row >= rows) break;
+                        if (type === 'blank') { col++; continue; }
 
                         if (type === 'image') {
                             const img = await loadImage(item.dataUrl);
@@ -480,10 +604,14 @@
                             const offsetY = (cellHeight - drawHeight) / 2;
 
                             const imgFormat = img.src.indexOf('image/jpeg') !== -1 ? 'JPEG' : 'PNG';
-                            pdf.addImage(img.src, imgFormat, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
+                            pdf.addImage(
+                                img.src, imgFormat, 
+                                baseX + offsetX + metrics.globalOffsetX, 
+                                baseY + offsetY + metrics.globalOffsetY, 
+                                drawWidth, drawHeight
+                            );
 
                             col++;
-                            if (col >= cols) { row++; col = 0; }
                         }
                     }
 
@@ -510,16 +638,18 @@
                     const cellWidth = baseImg.width;
                     const cellHeight = baseImg.height;
 
+                    const metrics = calculateGridMetrics(cols, rows, margin, gapX, gapY, cellWidth, cellHeight);
+
                     const bgCanvas = document.createElement('canvas');
-                    bgCanvas.width = canvas.width;
-                    bgCanvas.height = canvas.height;
+                    bgCanvas.width = metrics.finalW;
+                    bgCanvas.height = metrics.finalH;
                     const bgCtx = bgCanvas.getContext('2d');
                     bgCtx.fillStyle = '#ffffff';
-                    bgCtx.fillRect(0, 0, canvas.width, canvas.height);
+                    bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
 
                     const psdData = {
-                        width: canvas.width,
-                        height: canvas.height,
+                        width: metrics.finalW,
+                        height: metrics.finalH,
                         children: [{ name: '背景', canvas: bgCanvas }]
                     };
 
@@ -528,12 +658,13 @@
                     let imageCounter = 1;
 
                     for (let i = 0; i < selectedImages.length; i++) {
-                        if (row >= rows) break;
                         const item = selectedImages[i];
                         const type = item.type || 'image';
 
-                        if (type === 'newline') { col = 0; row++; continue; }
-                        if (type === 'blank') { col++; if (col >= cols) { row++; col = 0; } continue; }
+                        if (type === 'newline') { row++; col = 0; continue; }
+                        if (col >= cols) { row++; col = 0; }
+                        if (row >= rows) break;
+                        if (type === 'blank') { col++; continue; }
 
                         if (type === 'image') {
                             const img = await loadImage(item.dataUrl);
@@ -549,10 +680,15 @@
                             const offsetY = (cellHeight - drawHeight) / 2;
 
                             const layerCanvas = document.createElement('canvas');
-                            layerCanvas.width = canvas.width;
-                            layerCanvas.height = canvas.height;
+                            layerCanvas.width = metrics.finalW;
+                            layerCanvas.height = metrics.finalH;
                             const layerCtx = layerCanvas.getContext('2d');
-                            layerCtx.drawImage(img, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
+                            layerCtx.drawImage(
+                                img, 
+                                baseX + offsetX + metrics.globalOffsetX, 
+                                baseY + offsetY + metrics.globalOffsetY, 
+                                drawWidth, drawHeight
+                            );
 
                             psdData.children.push({
                                 name: `画像 ${imageCounter++}`,
@@ -560,7 +696,6 @@
                             });
 
                             col++;
-                            if (col >= cols) { row++; col = 0; }
                         }
                     }
 
@@ -581,6 +716,7 @@
         }
 
         function getProjectData() {
+            // 比率の設定もプロジェクトデータとして保存できるように追加
             return {
                 images: selectedImages,
                 settings: {
@@ -588,7 +724,9 @@
                     rows: document.getElementById('rows').value,
                     margin: document.getElementById('margin').value,
                     gapX: document.getElementById('gapX').value,
-                    gapY: document.getElementById('gapY').value
+                    gapY: document.getElementById('gapY').value,
+                    aspectRatio: document.getElementById('aspectRatio').value,
+                    customRatio: document.getElementById('customRatio').value
                 }
             };
         }
@@ -601,31 +739,27 @@
                 document.getElementById('margin').value = data.settings.margin;
                 document.getElementById('gapX').value = data.settings.gapX;
                 document.getElementById('gapY').value = data.settings.gapY;
+                
+                if (data.settings.aspectRatio) {
+                    document.getElementById('aspectRatio').value = data.settings.aspectRatio;
+                }
+                if (data.settings.customRatio) {
+                    document.getElementById('customRatio').value = data.settings.customRatio;
+                }
+                toggleCustomRatio(); // カスタムの場合の入力欄表示切替
             }
             renderPreview();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
         function exportProject() {
-            if (selectedImages.length === 0) { 
-                alert("保存するデータがありません。"); 
-                return; 
-            }
-
+            if (selectedImages.length === 0) { alert("保存するデータがありません。"); return; }
             const defaultName = getDefaultFileName();
             let fileName = prompt("保存するファイル名を入力してください。\n（未入力の場合は日時のファイル名になります）", "");
-
             if (fileName === null) return;
-
             fileName = fileName.trim();
-            if (fileName === "") {
-                fileName = defaultName;
-            }
-
-            if (!fileName.endsWith('.gridprj')) {
-                fileName += '.gridprj';
-            }
-
+            if (fileName === "") fileName = defaultName;
+            if (!fileName.endsWith('.gridprj')) fileName += '.gridprj';
             const dataStr = JSON.stringify(getProjectData());
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
