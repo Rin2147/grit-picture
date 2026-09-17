@@ -6,22 +6,16 @@
     <title>画像グリッド配置ツール</title>
     <link rel="icon" href="img/favicon.png" type="image/png">
     
-    <!-- ドラッグ移動用ライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <!-- PDF書き出し用ライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- PSD書き出し用ライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/ag-psd@14.3.0/dist/bundle.js"></script>
 
     <style>
-        /* 全体の基本設定 */
         * { box-sizing: border-box; }
         body { font-family: sans-serif; padding: 20px; background-color: #f0f2f5; margin: 0; display: flex; gap: 20px; }
         
-        /* メインエリア */
         .main-content { flex: 1; min-width: 0; }
         
-        /* サイドバー（履歴エリア） */
         .sidebar { width: 250px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; max-height: calc(100vh - 40px); overflow-y: auto; flex-shrink: 0; }
         .history-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
         .history-item:hover { background: #f8f9fa; }
@@ -29,12 +23,10 @@
         .history-info { font-size: 0.8em; color: #555; flex-grow: 1; line-height: 1.4; }
         .delete-btn { color: #dc3545; background: none; border: none; cursor: pointer; padding: 5px; flex-shrink: 0; }
 
-        /* コントロールパネル */
         .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
         .control-group { display: flex; flex-direction: column; }
         label { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; color: #333; }
-        input[type="number"] { width: 70px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
-        select, input[type="text"] { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+        input[type="number"], input[type="text"], select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
         
         button { padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         button:hover { background: #0056b3; filter: brightness(1.1); }
@@ -43,7 +35,6 @@
         .btn-info { background: #17a2b8; }
         .btn-secondary { background: #6c757d; }
 
-        /* ダウンロードボタンとプルダウンの結合デザイン */
         .download-group { display: flex; align-items: stretch; }
         .download-group button { border-top-right-radius: 0; border-bottom-right-radius: 0; margin: 0; padding: 10px 15px; }
         .download-group select {
@@ -53,12 +44,10 @@
         }
         .download-group select:hover { background: #1e7e34; }
         
-        /* ドラッグ＆ドロップエリア */
         #drop-zone { border: 2px dashed #bbb; padding: 20px; text-align: center; border-radius: 8px; background: #fafafa; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         #drop-zone.dragover { background: #e1f5fe; border-color: #03a9f4; }
         #drop-zone p { margin: 0; color: #666; pointer-events: none; line-height: 1.5; }
 
-        /* プレビューエリア */
         #preview-container { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 15px; min-height: 80px; background: white; padding: 20px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .preview-wrapper { position: relative; width: 64px; height: 64px; cursor: grab; }
         .preview-wrapper:active { cursor: grabbing; }
@@ -69,7 +58,6 @@
         }
         .sortable-ghost { opacity: 0.4; background-color: #e1f5fe; border-radius: 4px; transform: scale(1.05); }
 
-        /* 特殊アクションボタン（空白・改行） */
         .special-actions { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 20px; }
         .special-btn { 
             display: flex; align-items: center; justify-content: center; gap: 8px; 
@@ -77,18 +65,21 @@
             border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; 
         }
         .special-btn:hover { background: #dde2e6; }
-        .special-btn img { width: 40px; height:40px; object-fit: contain; }
+        .special-btn img { width: 30px; height: 30px; object-fit: contain; }
 
-        /* キャンバスエリア */
+        .mode-selector { width: 100%; display: flex; flex-direction: row; align-items: center; gap: 20px; background: #e9ecef; padding: 12px 15px; border-radius: 8px; flex-wrap: wrap; }
+        .mode-selector label { margin: 0; font-size: 0.95em; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+
+        #manualControls, #autoControls { width: 100%; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; padding: 15px; border-radius: 8px; background: #f8f9fa; border: 1px solid #ddd; }
+        #autoControls { border-color: #007bff; border-width: 2px; }
+
         #canvas-container { overflow: auto; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; max-height: 50vh; text-align: center; }
         canvas { box-shadow: 0 0 5px rgba(0,0,0,0.2); max-width: 100%; height: auto; }
         
-        /* ユーティリティ */
         .flex-spacer { flex-grow: 1; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
         .top-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
-        /* スマホ用レスポンシブデザイン */
         @media screen and (max-width: 768px) {
             body { flex-direction: column; padding: 10px; gap: 15px; }
             .sidebar { width: 100%; max-height: 300px; order: 2; }
@@ -97,7 +88,7 @@
             .top-buttons { justify-content: stretch; }
             .top-buttons button { flex: 1; text-align: center; padding: 12px 10px; font-size: 0.9em; }
             .controls { flex-direction: column; align-items: stretch; }
-            .control-group { flex-direction: column; align-items: flex-start; margin-bottom: 10px; }
+            .control-group { flex-direction: column; align-items: flex-start; margin-bottom: 5px; }
             .flex-spacer { display: none; }
             .controls > button { width: 100%; margin-top: 5px; padding: 15px; }
             .download-group { width: 100%; margin-top: 5px; }
@@ -110,6 +101,689 @@
 </head>
 <body>
 
+    <div class="main-content">
+        <div class="top-bar">
+            <h2 style="margin:0; font-size: 1.4em;">画像グリッド配置ツール</h2>
+            <div class="top-buttons">
+                <button class="btn-info" onclick="document.getElementById('importFile').click()">📂 開く</button>
+                <button class="btn-warning" onclick="exportProject()">💾 プロジェクト保存</button>
+                <input type="file" id="importFile" accept=".gridprj" style="display: none;" onchange="importProject(event)">
+            </div>
+        </div>
+
+        <div id="drop-zone">
+            <p>タップして画像を追加<br><span style="font-size: 0.8em; color: #888;">(またはドラッグ＆ドロップ)</span></p>
+            <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
+        </div>
+
+        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">ドラッグで移動、ダブルタップで削除</div>
+        <div id="preview-container"></div>
+
+        <div class="special-actions">
+            <button class="special-btn" onclick="addSpecialItem('blank')">
+                <img src="img/空白.png" alt="空白">空白を追加
+            </button>
+            <button class="special-btn" onclick="addSpecialItem('newline')">
+                <img src="img/改行.png" alt="改行">改行を追加
+            </button>
+        </div>
+
+        <div class="controls">
+            <!-- 💡 新機能：モード切替スイッチ -->
+            <div class="mode-selector">
+                <strong>生成タイプ:</strong>
+                <label><input type="radio" name="calcMode" value="manual" checked onchange="toggleMode()"> 行列を手動指定</label>
+                <label><input type="radio" name="calcMode" value="auto" onchange="toggleMode()"> 🪄 比率を指定して自動配置</label>
+            </div>
+
+            <!-- 手動指定モードのメニュー -->
+            <div id="manualControls">
+                <div class="control-group">
+                    <label>列数と行数</label>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="number" id="cols" value="10" min="1" title="列数(横)" style="width: 60px;">
+                        <button class="btn-secondary" onclick="swapColsRows()" title="列数と行数を入れ替える" style="padding: 6px;">⇔</button>
+                        <input type="number" id="rows" value="10" min="1" title="行数(縦)" style="width: 60px;">
+                        <button class="btn-info" onclick="adjustRows()" title="現在の画像数に合わせて行数を自動計算" style="padding: 6px 10px;">自動計算</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>キャンバス比率(余白調整)</label>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <select id="aspectRatio" onchange="toggleCustomRatio('aspectRatio', 'customRatio')">
+                            <option value="none">指定なし</option>
+                            <option value="1:1">1:1</option>
+                            <option value="16:9">16:9</option>
+                            <option value="9:16">9:16</option>
+                            <option value="4:3">4:3</option>
+                            <option value="3:4">3:4</option>
+                            <option value="custom">カスタム</option>
+                        </select>
+                        <input type="text" id="customRatio" placeholder="例: 2:1" style="display:none; width:70px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 自動配置モードのメニュー -->
+            <div id="autoControls" style="display: none;">
+                <div class="control-group">
+                    <label style="color: #007bff;">ターゲット比率</label>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <select id="autoRatio" onchange="toggleCustomRatio('autoRatio', 'autoCustomRatio')">
+                            <option value="1:1">1:1</option>
+                            <option value="16:9" selected>16:9</option>
+                            <option value="9:16">9:16</option>
+                            <option value="4:3">4:3</option>
+                            <option value="3:4">3:4</option>
+                            <option value="custom">カスタム</option>
+                        </select>
+                        <input type="text" id="autoCustomRatio" placeholder="例: 2:1" style="display:none; width:70px;">
+                    </div>
+                </div>
+                <div style="font-size: 0.85em; color: #555; align-self: center;">
+                </div>
+            </div>
+
+            <!-- 共通設定 -->
+            <div style="display: flex; gap: 15px; width: 100%; align-items: flex-end;">
+                <div class="control-group">
+                    <label>外側余白・画像間隔</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="number" id="margin" value="20" min="0" placeholder="外余白" title="外側余白" style="width: 60px;">
+                        <input type="number" id="gapX" value="10" min="0" placeholder="横間隔" title="横間隔" style="width: 60px;">
+                        <input type="number" id="gapY" value="10" min="0" placeholder="縦間隔" title="縦間隔" style="width: 60px;">
+                    </div>
+                </div>
+
+                <div class="flex-spacer"></div>
+                
+                <button onclick="generateGrid()" style="padding: 10px 15px;">▶ 生成＆履歴保存</button>
+                
+                <div class="download-group">
+                    <button onclick="downloadGrid()" class="btn-success">⬇ 保存</button>
+                    <select id="exportFormat">
+                        <option value="png">PNG</option>
+                        <option value="jpg">JPG</option>
+                        <option value="pdf">PDF</option>
+                        <option value="psd">PSD</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="resultCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <h3 style="margin-top:0; border-bottom: 2px solid #ccc; padding-bottom: 10px; font-size: 1.1em;">🕒 履歴 (自動保存)</h3>
+        <div id="history-list"></div>
+    </div>
+
+    <script>
+        let selectedImages = [];
+        let sortableInstance = null;
+        let lastTapIndex = -1;
+        let lastTapTime = 0;
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('imageInput');
+        const previewContainer = document.getElementById('preview-container');
+        const canvas = document.getElementById('resultCanvas');
+        const ctx = canvas.getContext('2d');
+        const historyList = document.getElementById('history-list');
+
+        const DB_NAME = 'GridToolDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'history';
+        let db;
+
+        const initDB = () => {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => { db = e.target.result; resolve(); updateHistoryUI(); };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        };
+
+        const fileToBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        };
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => { handleFiles(e.target.files); fileInput.value = ''; });
+
+        async function handleFiles(files) {
+            for (let file of files) {
+                if (file.type.startsWith('image/')) {
+                    const dataUrl = await fileToBase64(file);
+                    selectedImages.push({ type: 'image', dataUrl: dataUrl });
+                }
+            }
+            renderPreview();
+        }
+
+        function addSpecialItem(type) {
+            if (type === 'blank') {
+                selectedImages.push({ type: 'blank', dataUrl: 'img/空白.png' });
+            } else if (type === 'newline') {
+                selectedImages.push({ type: 'newline', dataUrl: 'img/改行.png' });
+            }
+            renderPreview();
+        }
+
+        // 💡 UI表示切り替え
+        function toggleMode() {
+            const mode = document.querySelector('input[name="calcMode"]:checked').value;
+            document.getElementById('manualControls').style.display = (mode === 'manual') ? 'flex' : 'none';
+            document.getElementById('autoControls').style.display = (mode === 'auto') ? 'flex' : 'none';
+        }
+
+        function toggleCustomRatio(selectId, inputId) {
+            const select = document.getElementById(selectId);
+            const input = document.getElementById(inputId);
+            input.style.display = (select.value === 'custom') ? 'block' : 'none';
+        }
+
+        // 💡 ⇔ボタン（行列入れ替え）
+        function swapColsRows() {
+            const colsInput = document.getElementById('cols');
+            const rowsInput = document.getElementById('rows');
+            const temp = colsInput.value;
+            colsInput.value = rowsInput.value;
+            rowsInput.value = temp;
+        }
+
+        // 💡 「改行バグ」を完全解消したグリッド巡回シミュレーター
+        function simulateGridMetrics(items, testCols, cellWidth, cellHeight, gapX, gapY, margin) {
+            let col = 0; let row = 0; let maxCol = 0;
+            for (let i = 0; i < items.length; i++) {
+                const type = items[i].type || 'image';
+
+                // 先に明示的な改行を処理
+                if (type === 'newline') {
+                    row++;
+                    col = 0;
+                    continue;
+                }
+
+                // 列端到達時の自動改行
+                if (col >= testCols) {
+                    row++;
+                    col = 0;
+                }
+
+                if (type === 'blank') {
+                    col++;
+                    if (col > maxCol) maxCol = col;
+                    continue;
+                }
+                if (type === 'image') {
+                    col++;
+                    if (col > maxCol) maxCol = col;
+                }
+            }
+            
+            const totalRows = (col > 0) ? row + 1 : row;
+            const actualCols = Math.max(maxCol, 1);
+            const w = margin * 2 + actualCols * cellWidth + (actualCols - 1) * gapX;
+            const h = margin * 2 + Math.max(totalRows, 1) * cellHeight + (Math.max(totalRows, 1) - 1) * gapY;
+            return { w, h, rows: Math.max(totalRows, 1) };
+        }
+
+        // 💡 行数を現在のアイテム数にぴったり合わせる機能
+        function adjustRows() {
+            if (selectedImages.length === 0) return;
+            const cols = parseInt(document.getElementById('cols').value, 10);
+            const metrics = simulateGridMetrics(selectedImages, cols, 10, 10, 0, 0, 0); // 個数算出にサイズは不要
+            document.getElementById('rows').value = metrics.rows;
+        }
+
+        function renderPreview() {
+            previewContainer.innerHTML = '';
+            if (sortableInstance) sortableInstance.destroy();
+            if (selectedImages.length === 0) {
+                previewContainer.innerHTML = '<span style="color:#999; font-size: 0.9em;">画像がありません。</span>';
+                return;
+            }
+
+            selectedImages.forEach((imgData, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-wrapper';
+                wrapper.dataset.index = index;
+
+                const img = document.createElement('img');
+                img.src = imgData.dataUrl;
+                img.className = 'preview-item';
+
+                wrapper.addEventListener('click', (e) => {
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTapTime;
+                    if (tapLength < 400 && tapLength > 0 && lastTapIndex === index) {
+                        e.preventDefault();
+                        selectedImages.splice(index, 1);
+                        renderPreview();
+                        lastTapTime = 0; 
+                        return;
+                    }
+                    lastTapIndex = index;
+                    lastTapTime = currentTime;
+                });
+
+                wrapper.appendChild(img);
+                previewContainer.appendChild(wrapper);
+            });
+
+            sortableInstance = new Sortable(previewContainer, {
+                animation: 150, ghostClass: 'sortable-ghost', delay: 150, delayOnTouchOnly: true, fallbackTolerance: 5, 
+                onEnd: function (evt) {
+                    if (evt.oldIndex !== evt.newIndex) {
+                        const movedItem = selectedImages.splice(evt.oldIndex, 1)[0];
+                        selectedImages.splice(evt.newIndex, 0, movedItem);
+                        renderPreview(); 
+                    }
+                }
+            });
+        }
+
+        const loadImage = (src) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = src;
+            });
+        };
+
+        // 💡 キャンバス全体の設定（比率オートフィットなど）を計算する超中核関数
+        async function getGridConfig() {
+            const baseItem = selectedImages.find(item => !item.type || item.type === 'image');
+            if (!baseItem) throw new Error("基準となる通常の画像が含まれていません。");
+            
+            const baseImg = await loadImage(baseItem.dataUrl);
+            const cellWidth = baseImg.width;
+            const cellHeight = baseImg.height;
+
+            const margin = parseInt(document.getElementById('margin').value, 10);
+            const gapX = parseInt(document.getElementById('gapX').value, 10);
+            const gapY = parseInt(document.getElementById('gapY').value, 10);
+            const calcMode = document.querySelector('input[name="calcMode"]:checked').value;
+
+            let activeCols, activeRows, finalW, finalH, globalOffsetX = 0, globalOffsetY = 0;
+
+            if (calcMode === 'manual') {
+                activeCols = parseInt(document.getElementById('cols').value, 10);
+                activeRows = parseInt(document.getElementById('rows').value, 10);
+                
+                // 手動モードは指定された行列に基づいてベースサイズを作る
+                let baseW = margin * 2 + (activeCols * cellWidth) + ((activeCols - 1) * gapX);
+                let baseH = margin * 2 + (activeRows * cellHeight) + ((activeRows - 1) * gapY);
+                finalW = baseW; finalH = baseH;
+
+                // 従来の「余白を足して比率を調整」する機能
+                const ratioSelect = document.getElementById('aspectRatio').value;
+                if (ratioSelect !== 'none') {
+                    let targetX, targetY;
+                    if (ratioSelect === 'custom') {
+                        const parts = document.getElementById('customRatio').value.split(':');
+                        targetX = parseFloat(parts[0]); targetY = parseFloat(parts[1]);
+                    } else {
+                        const parts = ratioSelect.split(':');
+                        targetX = parseFloat(parts[0]); targetY = parseFloat(parts[1]);
+                    }
+
+                    if (targetX && targetY) {
+                        const targetRatio = targetX / targetY;
+                        const currentRatio = baseW / baseH;
+                        if (currentRatio > targetRatio) {
+                            finalH = baseW / targetRatio;
+                            globalOffsetY = (finalH - baseH) / 2;
+                        } else {
+                            finalW = baseH * targetRatio;
+                            globalOffsetX = (finalW - baseW) / 2;
+                        }
+                    }
+                }
+            } else {
+                // 💡 新規：指定比率にピッタリ合う「列数」を総当たりでシミュレーション計算
+                let targetX, targetY;
+                const ratioSelect = document.getElementById('autoRatio').value;
+                if (ratioSelect === 'custom') {
+                    const parts = document.getElementById('autoCustomRatio').value.split(':');
+                    targetX = parseFloat(parts[0]); targetY = parseFloat(parts[1]);
+                } else {
+                    const parts = ratioSelect.split(':');
+                    targetX = parseFloat(parts[0]); targetY = parseFloat(parts[1]);
+                }
+                const targetRatio = (targetX && targetY) ? (targetX / targetY) : 1;
+
+                let bestDiff = Infinity;
+                let bestCols = 1;
+                let bestRows = 1;
+                let bestW = 0;
+                let bestH = 0;
+
+                // 全アイテム数まで総当たり
+                for (let testCols = 1; testCols <= Math.max(selectedImages.length, 1); testCols++) {
+                    const metrics = simulateGridMetrics(selectedImages, testCols, cellWidth, cellHeight, gapX, gapY, margin);
+                    const currentRatio = metrics.w / metrics.h;
+                    const diff = Math.abs(currentRatio - targetRatio);
+                    
+                    if (diff < bestDiff) {
+                        bestDiff = diff;
+                        bestCols = testCols;
+                        bestRows = metrics.rows;
+                        bestW = metrics.w;
+                        bestH = metrics.h;
+                    }
+                }
+                activeCols = bestCols;
+                activeRows = bestRows;
+                finalW = bestW;
+                finalH = bestH;
+            }
+
+            return {
+                mode: calcMode, cols: activeCols, rows: activeRows,
+                margin, gapX, gapY, finalW, finalH, globalOffsetX, globalOffsetY,
+                cellWidth, cellHeight
+            };
+        }
+
+        // 💡 ループ処理を統一（Canvas・PDF・PSD全てで同じバグなし挙動を実現）
+        async function renderGridItems(config, onDrawCallback) {
+            let col = 0; let row = 0;
+            for (let i = 0; i < selectedImages.length; i++) {
+                const item = selectedImages[i];
+                const type = item.type || 'image';
+
+                // ① 先に明示的な改行処理
+                if (type === 'newline') { row++; col = 0; continue; }
+                
+                // ② 画面端の自動改行処理
+                if (col >= config.cols) { row++; col = 0; }
+                
+                // 行数がオーバーしたら終了（手動モードのみ）
+                if (config.mode === 'manual' && row >= config.rows) break;
+                
+                if (type === 'blank') { col++; continue; }
+
+                if (type === 'image') {
+                    const baseX = config.margin + col * (config.cellWidth + config.gapX);
+                    const baseY = config.margin + row * (config.cellHeight + config.gapY);
+                    await onDrawCallback(item, baseX, baseY);
+                    col++;
+                }
+            }
+        }
+
+        async function drawSingleImage(ctx, config, item, baseX, baseY) {
+            const img = await loadImage(item.dataUrl);
+            let scale = Math.min(config.cellWidth / img.width, config.cellHeight / img.height);
+            if (scale > 1) scale = 1;
+            const drawWidth = img.width * scale;
+            const drawHeight = img.height * scale;
+            const offsetX = (config.cellWidth - drawWidth) / 2;
+            const offsetY = (config.cellHeight - drawHeight) / 2;
+            ctx.drawImage(img, baseX + offsetX + config.globalOffsetX, baseY + offsetY + config.globalOffsetY, drawWidth, drawHeight);
+        }
+
+        async function generateGrid() {
+            if (selectedImages.length === 0) { alert("画像を追加してください。"); return; }
+            let config;
+            try { config = await getGridConfig(); } catch (e) { alert(e.message); return; }
+
+            canvas.width = config.finalW;
+            canvas.height = config.finalH;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            await renderGridItems(config, async (item, baseX, baseY) => {
+                await drawSingleImage(ctx, config, item, baseX, baseY);
+            });
+
+            saveToHistory({ 
+                cols: document.getElementById('cols').value, rows: document.getElementById('rows').value, 
+                margin: document.getElementById('margin').value, gapX: document.getElementById('gapX').value, 
+                gapY: document.getElementById('gapY').value 
+            });
+        }
+
+        function getDefaultFileName() {
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}`;
+        }
+
+        async function downloadGrid() {
+            if (selectedImages.length === 0) { alert("書き出す画像がありません。"); return; }
+            let config;
+            try { config = await getGridConfig(); } catch (e) { alert(e.message); return; }
+            
+            const format = document.getElementById('exportFormat').value;
+            const defaultName = getDefaultFileName();
+            await generateGrid(); 
+
+            if (format === 'png') {
+                const link = document.createElement('a');
+                link.download = `${defaultName}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } 
+            else if (format === 'jpg') {
+                const link = document.createElement('a');
+                link.download = `${defaultName}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.click();
+            }
+            else if (format === 'pdf') {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({
+                        orientation: config.finalW > config.finalH ? 'l' : 'p',
+                        unit: 'px',
+                        format: [config.finalW, config.finalH]
+                    });
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.rect(0, 0, config.finalW, config.finalH, 'F');
+
+                    await renderGridItems(config, async (item, baseX, baseY) => {
+                        const img = await loadImage(item.dataUrl);
+                        let scale = Math.min(config.cellWidth / img.width, config.cellHeight / img.height);
+                        if (scale > 1) scale = 1;
+                        const drawWidth = img.width * scale;
+                        const drawHeight = img.height * scale;
+                        const offsetX = (config.cellWidth - drawWidth) / 2;
+                        const offsetY = (config.cellHeight - drawHeight) / 2;
+                        const imgFormat = img.src.indexOf('image/jpeg') !== -1 ? 'JPEG' : 'PNG';
+                        
+                        pdf.addImage(img.src, imgFormat, 
+                            baseX + offsetX + config.globalOffsetX, 
+                            baseY + offsetY + config.globalOffsetY, 
+                            drawWidth, drawHeight);
+                    });
+                    pdf.save(`${defaultName}.pdf`);
+                } catch (e) {
+                    alert("PDFの生成に失敗しました。");
+                    console.error(e);
+                }
+            }
+            else if (format === 'psd') {
+                try {
+                    if (!window.agPsd) { alert("PSD用ライブラリが読み込まれていません。"); return; }
+                    const bgCanvas = document.createElement('canvas');
+                    bgCanvas.width = config.finalW; bgCanvas.height = config.finalH;
+                    const bgCtx = bgCanvas.getContext('2d');
+                    bgCtx.fillStyle = '#ffffff';
+                    bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+                    const psdData = {
+                        width: config.finalW, height: config.finalH,
+                        children: [{ name: '背景', canvas: bgCanvas }]
+                    };
+
+                    let imageCounter = 1;
+                    await renderGridItems(config, async (item, baseX, baseY) => {
+                        const layerCanvas = document.createElement('canvas');
+                        layerCanvas.width = config.finalW; layerCanvas.height = config.finalH;
+                        const layerCtx = layerCanvas.getContext('2d');
+                        await drawSingleImage(layerCtx, config, item, baseX, baseY);
+
+                        psdData.children.push({ name: `画像 ${imageCounter++}`, canvas: layerCanvas });
+                    });
+
+                    const buffer = agPsd.writePsd(psdData);
+                    const blob = new Blob([buffer], { type: 'application/octet-stream' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `${defaultName}.psd`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                } catch (e) {
+                    alert("PSDの生成に失敗しました。");
+                    console.error(e);
+                }
+            }
+        }
+
+        function getProjectData() {
+            return {
+                images: selectedImages,
+                settings: {
+                    calcMode: document.querySelector('input[name="calcMode"]:checked').value,
+                    cols: document.getElementById('cols').value,
+                    rows: document.getElementById('rows').value,
+                    margin: document.getElementById('margin').value,
+                    gapX: document.getElementById('gapX').value,
+                    gapY: document.getElementById('gapY').value,
+                    aspectRatio: document.getElementById('aspectRatio').value,
+                    customRatio: document.getElementById('customRatio').value,
+                    autoRatio: document.getElementById('autoRatio').value,
+                    autoCustomRatio: document.getElementById('autoCustomRatio').value
+                }
+            };
+        }
+
+        function loadProjectData(data) {
+            selectedImages = data.images || [];
+            if(data.settings) {
+                if (data.settings.calcMode) {
+                    document.querySelector(`input[name="calcMode"][value="${data.settings.calcMode}"]`).checked = true;
+                }
+                document.getElementById('cols').value = data.settings.cols || 10;
+                document.getElementById('rows').value = data.settings.rows || 10;
+                document.getElementById('margin').value = data.settings.margin || 20;
+                document.getElementById('gapX').value = data.settings.gapX || 10;
+                document.getElementById('gapY').value = data.settings.gapY || 10;
+                
+                if (data.settings.aspectRatio) document.getElementById('aspectRatio').value = data.settings.aspectRatio;
+                if (data.settings.customRatio) document.getElementById('customRatio').value = data.settings.customRatio;
+                if (data.settings.autoRatio) document.getElementById('autoRatio').value = data.settings.autoRatio;
+                if (data.settings.autoCustomRatio) document.getElementById('autoCustomRatio').value = data.settings.autoCustomRatio;
+                
+                toggleMode();
+                toggleCustomRatio('aspectRatio', 'customRatio');
+                toggleCustomRatio('autoRatio', 'autoCustomRatio');
+            }
+            renderPreview();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function exportProject() {
+            if (selectedImages.length === 0) { alert("保存するデータがありません。"); return; }
+            const defaultName = getDefaultFileName();
+            let fileName = prompt("保存するファイル名を入力してください。\n（未入力の場合は日時のファイル名になります）", "");
+            if (fileName === null) return;
+            fileName = fileName.trim();
+            if (fileName === "") fileName = defaultName;
+            if (!fileName.endsWith('.gridprj')) fileName += '.gridprj';
+            const dataStr = JSON.stringify(getProjectData());
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importProject(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    loadProjectData(data);
+                    event.target.value = '';
+                } catch (err) { alert("ファイルの読み込みに失敗しました。"); }
+            };
+            reader.readAsText(file);
+        }
+
+        function saveToHistory(settings) {
+            if (!db) return;
+            const projectData = getProjectData();
+            const record = { id: new Date().getTime(), date: new Date().toLocaleString(), thumb: canvas.toDataURL('image/jpeg', 0.1), data: projectData };
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            transaction.objectStore(STORE_NAME).put(record);
+            transaction.oncomplete = () => updateHistoryUI();
+        }
+
+        function loadFromHistory(id) {
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const request = transaction.objectStore(STORE_NAME).get(id);
+            request.onsuccess = (e) => { if (e.target.result) loadProjectData(e.target.result.data); };
+        }
+
+        function deleteHistory(id, event) {
+            event.stopPropagation();
+            if(!confirm("この履歴を削除しますか？")) return;
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            transaction.objectStore(STORE_NAME).delete(id);
+            transaction.oncomplete = () => updateHistoryUI();
+        }
+
+        function updateHistoryUI() {
+            if (!db) return;
+            historyList.innerHTML = '';
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const request = transaction.objectStore(STORE_NAME).getAll();
+            request.onsuccess = (e) => {
+                const records = e.target.result.reverse();
+                if(records.length === 0) historyList.innerHTML = '<div style="color:#999; font-size:0.9em; text-align:center; padding: 20px;">履歴はありません</div>';
+                records.forEach(record => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.onclick = () => loadFromHistory(record.id);
+                    div.innerHTML = `<img src="${record.thumb}" class="history-thumb"><div class="history-info"><strong>${record.data.images.length}枚の画像</strong><br>${record.date}</div><button class="delete-btn" onclick="deleteHistory(${record.id}, event)">✖</button>`;
+                    historyList.appendChild(div);
+                });
+            };
+        }
+
+        initDB().catch(console.error);
+        renderPreview();
+    </script>
+</body>
+</html>
     <div class="main-content">
         <div class="top-bar">
             <h2 style="margin:0; font-size: 1.4em;">画像グリッド配置ツール</h2>
