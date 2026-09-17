@@ -14,14 +14,14 @@
     <script src="https://cdn.jsdelivr.net/npm/ag-psd@14.3.0/dist/bundle.js"></script>
 
     <style>
-        /* 基本設定 */
+        /* 全体の基本設定 */
         * { box-sizing: border-box; }
         body { font-family: sans-serif; padding: 20px; background-color: #f0f2f5; margin: 0; display: flex; gap: 20px; }
         
         /* メインエリア */
         .main-content { flex: 1; min-width: 0; }
         
-        /* サイドバー */
+        /* サイドバー（履歴エリア） */
         .sidebar { width: 250px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; max-height: calc(100vh - 40px); overflow-y: auto; flex-shrink: 0; }
         .history-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
         .history-item:hover { background: #f8f9fa; }
@@ -39,27 +39,14 @@
         .btn-success { background: #28a745; }
         .btn-warning { background: #ffc107; color: black; }
         .btn-info { background: #17a2b8; }
-        
-        .download-group {
-            display: flex;
-            align-items: stretch;
-        }
-        .download-group button {
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-            margin: 0;
-        }
+
+        /* ダウンロードボタンとプルダウンの結合デザイン */
+        .download-group { display: flex; align-items: stretch; }
+        .download-group button { border-top-right-radius: 0; border-bottom-right-radius: 0; margin: 0; }
         .download-group select {
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
-            border: 1px solid #218838;
-            background: #218838;
-            color: white;
-            font-weight: bold;
-            padding: 0 10px;
-            cursor: pointer;
-            outline: none;
-            border-radius: 0 4px 4px 0;
+            border-top-left-radius: 0; border-bottom-left-radius: 0; border: 1px solid #218838;
+            background: #218838; color: white; font-weight: bold; padding: 0 10px; cursor: pointer;
+            outline: none; border-radius: 0 4px 4px 0;
         }
         .download-group select:hover { background: #1e7e34; }
         
@@ -69,18 +56,25 @@
         #drop-zone p { margin: 0; color: #666; pointer-events: none; line-height: 1.5; }
 
         /* プレビューエリア */
-        #preview-container { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; min-height: 80px; background: white; padding: 20px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        
-        /* プレビュー画像ラッパー */
+        #preview-container { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 15px; min-height: 80px; background: white; padding: 20px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .preview-wrapper { position: relative; width: 64px; height: 64px; cursor: grab; }
         .preview-wrapper:active { cursor: grabbing; }
-        
         .preview-item { 
             width: 100%; height: 100%; object-fit: contain; border: 2px solid transparent; 
             border-radius: 4px; background: #f9f9f9; pointer-events: none; 
             user-select: none; -webkit-touch-callout: none;
         }
         .sortable-ghost { opacity: 0.4; background-color: #e1f5fe; border-radius: 4px; transform: scale(1.05); }
+
+        /* 💡 新機能：特殊アクションボタン（空白・改行） */
+        .special-actions { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 20px; }
+        .special-btn { 
+            display: flex; align-items: center; justify-content: center; gap: 8px; 
+            background: #e9ecef; color: #333; border: 1px solid #ced4da; padding: 8px 15px; 
+            border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; 
+        }
+        .special-btn:hover { background: #dde2e6; }
+        .special-btn img { width: 20px; height: 20px; object-fit: contain; }
 
         /* キャンバスエリア */
         #canvas-container { overflow: auto; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; max-height: 50vh; text-align: center; }
@@ -106,6 +100,8 @@
             .controls > button { width: 100%; margin-top: 5px; padding: 15px; }
             .download-group { width: 100%; margin-top: 5px; }
             .download-group button { flex: 1; padding: 15px; }
+            .special-actions { justify-content: space-between; }
+            .special-btn { flex: 1; }
             #drop-zone { padding: 30px 15px; }
         }
     </style>
@@ -129,6 +125,16 @@
 
         <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">ドラッグで移動、ダブルタップで削除</div>
         <div id="preview-container"></div>
+
+        <!-- 💡 新機能：改行と空白の追加ボタン -->
+        <div class="special-actions">
+            <button class="special-btn" onclick="addSpecialItem('blank')">
+                <img src="img/空白.png" alt="空白">空白を追加
+            </button>
+            <button class="special-btn" onclick="addSpecialItem('newline')">
+                <img src="img/改行.png" alt="改行">改行を追加
+            </button>
+        </div>
 
         <div class="controls">
             <div class="control-group">
@@ -155,7 +161,6 @@
             
             <button onclick="generateGrid()">▶ 生成＆履歴保存</button>
             
-            <!-- 💡 ダウンロードボタングループ -->
             <div class="download-group">
                 <button onclick="downloadGrid()" class="btn-success">⬇ 保存</button>
                 <select id="exportFormat">
@@ -233,8 +238,18 @@
             for (let file of files) {
                 if (file.type.startsWith('image/')) {
                     const dataUrl = await fileToBase64(file);
-                    selectedImages.push({ dataUrl });
+                    // 通常の画像は type: 'image' として登録
+                    selectedImages.push({ type: 'image', dataUrl: dataUrl });
                 }
+            }
+            renderPreview();
+        }
+
+        function addSpecialItem(type) {
+            if (type === 'blank') {
+                selectedImages.push({ type: 'blank', dataUrl: 'img/空白.png' });
+            } else if (type === 'newline') {
+                selectedImages.push({ type: 'newline', dataUrl: 'img/改行.png' });
             }
             renderPreview();
         }
@@ -304,8 +319,16 @@
             });
         };
 
+        // 💡 共通の座標・描画計算ロジック
         async function generateGrid() {
             if (selectedImages.length === 0) { alert("画像を追加してください。"); return; }
+
+            // 基準となる普通の画像を探す（サイズ取得のため）
+            const baseItem = selectedImages.find(item => !item.type || item.type === 'image');
+            if (!baseItem) {
+                alert("基準となる通常の画像が含まれていません。\n（空白や改行のみでの生成はできません）");
+                return;
+            }
 
             const cols = parseInt(document.getElementById('cols').value, 10);
             const rows = parseInt(document.getElementById('rows').value, 10);
@@ -313,10 +336,9 @@
             const gapX = parseInt(document.getElementById('gapX').value, 10);
             const gapY = parseInt(document.getElementById('gapY').value, 10);
 
-            const images = await Promise.all(selectedImages.map(img => loadImage(img.dataUrl)));
-            
-            const cellWidth = images[0].width;
-            const cellHeight = images[0].height;
+            const baseImg = await loadImage(baseItem.dataUrl);
+            const cellWidth = baseImg.width;
+            const cellHeight = baseImg.height;
 
             canvas.width = margin * 2 + (cols * cellWidth) + ((cols - 1) * gapX);
             canvas.height = margin * 2 + (rows * cellHeight) + ((rows - 1) * gapY);
@@ -324,22 +346,51 @@
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            images.forEach((img, index) => {
-                if (index >= cols * rows) return;
-                
-                const baseX = margin + (index % cols) * (cellWidth + gapX);
-                const baseY = margin + Math.floor(index / cols) * (cellHeight + gapY);
+            let col = 0;
+            let row = 0;
 
-                let scale = Math.min(cellWidth / img.width, cellHeight / img.height);
-                if (scale > 1) scale = 1;
+            // 配列を順番に読み込み、空白・改行・画像の処理を分岐
+            for (let i = 0; i < selectedImages.length; i++) {
+                if (row >= rows) break; // 設定した行数を超えたら終了
 
-                const drawWidth = img.width * scale;
-                const drawHeight = img.height * scale;
-                const offsetX = (cellWidth - drawWidth) / 2;
-                const offsetY = (cellHeight - drawHeight) / 2;
+                const item = selectedImages[i];
+                const type = item.type || 'image'; // 古いセーブデータ互換性用
 
-                ctx.drawImage(img, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
-            });
+                if (type === 'newline') {
+                    // 改行：列をリセットして次の行へ
+                    col = 0;
+                    row++;
+                    continue;
+                }
+
+                if (type === 'blank') {
+                    // 空白：何も描画せずに列を1つ進める
+                    col++;
+                    if (col >= cols) { row++; col = 0; }
+                    continue;
+                }
+
+                if (type === 'image') {
+                    // 通常の画像：計算した場所に描画して進める
+                    const img = await loadImage(item.dataUrl);
+                    
+                    const baseX = margin + col * (cellWidth + gapX);
+                    const baseY = margin + row * (cellHeight + gapY);
+
+                    let scale = Math.min(cellWidth / img.width, cellHeight / img.height);
+                    if (scale > 1) scale = 1;
+
+                    const drawWidth = img.width * scale;
+                    const drawHeight = img.height * scale;
+                    const offsetX = (cellWidth - drawWidth) / 2;
+                    const offsetY = (cellHeight - drawHeight) / 2;
+
+                    ctx.drawImage(img, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
+
+                    col++;
+                    if (col >= cols) { row++; col = 0; }
+                }
+            }
 
             saveToHistory({ cols, rows, margin, gapX, gapY });
         }
@@ -357,6 +408,13 @@
         async function downloadGrid() {
             if (selectedImages.length === 0) {
                 alert("書き出す画像がありません。");
+                return;
+            }
+
+            // 基準となる普通の画像を探す
+            const baseItem = selectedImages.find(item => !item.type || item.type === 'image');
+            if (!baseItem) {
+                alert("基準となる通常の画像が含まれていません。");
                 return;
             }
 
@@ -386,7 +444,6 @@
                         format: [canvas.width, canvas.height]
                     });
 
-                    // 背景を白で塗りつぶし
                     pdf.setFillColor(255, 255, 255);
                     pdf.rect(0, 0, canvas.width, canvas.height, 'F');
 
@@ -396,28 +453,41 @@
                     const gapX = parseInt(document.getElementById('gapX').value, 10);
                     const gapY = parseInt(document.getElementById('gapY').value, 10);
 
-                    const images = await Promise.all(selectedImages.map(img => loadImage(img.dataUrl)));
-                    const cellWidth = images[0].width;
-                    const cellHeight = images[0].height;
+                    const baseImg = await loadImage(baseItem.dataUrl);
+                    const cellWidth = baseImg.width;
+                    const cellHeight = baseImg.height;
 
-                    images.forEach((img, index) => {
-                        if (index >= cols * rows) return;
-                        
-                        const baseX = margin + (index % cols) * (cellWidth + gapX);
-                        const baseY = margin + Math.floor(index / cols) * (cellHeight + gapY);
+                    let col = 0;
+                    let row = 0;
 
-                        let scale = Math.min(cellWidth / img.width, cellHeight / img.height);
-                        if (scale > 1) scale = 1;
+                    for (let i = 0; i < selectedImages.length; i++) {
+                        if (row >= rows) break;
+                        const item = selectedImages[i];
+                        const type = item.type || 'image';
 
-                        const drawWidth = img.width * scale;
-                        const drawHeight = img.height * scale;
-                        const offsetX = (cellWidth - drawWidth) / 2;
-                        const offsetY = (cellHeight - drawHeight) / 2;
+                        if (type === 'newline') { col = 0; row++; continue; }
+                        if (type === 'blank') { col++; if (col >= cols) { row++; col = 0; } continue; }
 
-                        const imgFormat = img.src.indexOf('image/jpeg') !== -1 ? 'JPEG' : 'PNG';
-                        
-                        pdf.addImage(img.src, imgFormat, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
-                    });
+                        if (type === 'image') {
+                            const img = await loadImage(item.dataUrl);
+                            const baseX = margin + col * (cellWidth + gapX);
+                            const baseY = margin + row * (cellHeight + gapY);
+
+                            let scale = Math.min(cellWidth / img.width, cellHeight / img.height);
+                            if (scale > 1) scale = 1;
+
+                            const drawWidth = img.width * scale;
+                            const drawHeight = img.height * scale;
+                            const offsetX = (cellWidth - drawWidth) / 2;
+                            const offsetY = (cellHeight - drawHeight) / 2;
+
+                            const imgFormat = img.src.indexOf('image/jpeg') !== -1 ? 'JPEG' : 'PNG';
+                            pdf.addImage(img.src, imgFormat, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
+
+                            col++;
+                            if (col >= cols) { row++; col = 0; }
+                        }
+                    }
 
                     pdf.save(`${defaultName}.pdf`);
                 } catch (e) {
@@ -438,9 +508,9 @@
                     const gapX = parseInt(document.getElementById('gapX').value, 10);
                     const gapY = parseInt(document.getElementById('gapY').value, 10);
                     
-                    const images = await Promise.all(selectedImages.map(img => loadImage(img.dataUrl)));
-                    const cellWidth = images[0].width;
-                    const cellHeight = images[0].height;
+                    const baseImg = await loadImage(baseItem.dataUrl);
+                    const cellWidth = baseImg.width;
+                    const cellHeight = baseImg.height;
 
                     const bgCanvas = document.createElement('canvas');
                     bgCanvas.width = canvas.width;
@@ -452,40 +522,49 @@
                     const psdData = {
                         width: canvas.width,
                         height: canvas.height,
-                        children: [
-                            {
-                                name: '背景',
-                                canvas: bgCanvas
-                            }
-                        ]
+                        children: [{ name: '背景', canvas: bgCanvas }]
                     };
 
-                    images.forEach((img, index) => {
-                        if (index >= cols * rows) return;
-                        
-                        const baseX = margin + (index % cols) * (cellWidth + gapX);
-                        const baseY = margin + Math.floor(index / cols) * (cellHeight + gapY);
+                    let col = 0;
+                    let row = 0;
+                    let imageCounter = 1;
 
-                        let scale = Math.min(cellWidth / img.width, cellHeight / img.height);
-                        if (scale > 1) scale = 1;
+                    for (let i = 0; i < selectedImages.length; i++) {
+                        if (row >= rows) break;
+                        const item = selectedImages[i];
+                        const type = item.type || 'image';
 
-                        const drawWidth = img.width * scale;
-                        const drawHeight = img.height * scale;
-                        const offsetX = (cellWidth - drawWidth) / 2;
-                        const offsetY = (cellHeight - drawHeight) / 2;
+                        if (type === 'newline') { col = 0; row++; continue; }
+                        if (type === 'blank') { col++; if (col >= cols) { row++; col = 0; } continue; }
 
-                        const layerCanvas = document.createElement('canvas');
-                        layerCanvas.width = canvas.width;
-                        layerCanvas.height = canvas.height;
-                        const layerCtx = layerCanvas.getContext('2d');
-                        
-                        layerCtx.drawImage(img, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
+                        if (type === 'image') {
+                            const img = await loadImage(item.dataUrl);
+                            const baseX = margin + col * (cellWidth + gapX);
+                            const baseY = margin + row * (cellHeight + gapY);
 
-                        psdData.children.push({
-                            name: `画像 ${index + 1}`,
-                            canvas: layerCanvas
-                        });
-                    });
+                            let scale = Math.min(cellWidth / img.width, cellHeight / img.height);
+                            if (scale > 1) scale = 1;
+
+                            const drawWidth = img.width * scale;
+                            const drawHeight = img.height * scale;
+                            const offsetX = (cellWidth - drawWidth) / 2;
+                            const offsetY = (cellHeight - drawHeight) / 2;
+
+                            const layerCanvas = document.createElement('canvas');
+                            layerCanvas.width = canvas.width;
+                            layerCanvas.height = canvas.height;
+                            const layerCtx = layerCanvas.getContext('2d');
+                            layerCtx.drawImage(img, baseX + offsetX, baseY + offsetY, drawWidth, drawHeight);
+
+                            psdData.children.push({
+                                name: `画像 ${imageCounter++}`,
+                                canvas: layerCanvas
+                            });
+
+                            col++;
+                            if (col >= cols) { row++; col = 0; }
+                        }
+                    }
 
                     const buffer = agPsd.writePsd(psdData);
                     const blob = new Blob([buffer], { type: 'application/octet-stream' });
