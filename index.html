@@ -66,7 +66,6 @@
         }
         .sortable-ghost { opacity: 0.4; background-color: #e1f5fe; border-radius: 4px; transform: scale(1.05); }
 
-        /* 💡 新機能：特殊アクションボタン（空白・改行） */
         .special-actions { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 20px; }
         .special-btn { 
             display: flex; align-items: center; justify-content: center; gap: 8px; 
@@ -74,7 +73,7 @@
             border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; 
         }
         .special-btn:hover { background: #dde2e6; }
-        .special-btn img { width: 20px; height: 20px; object-fit: contain; }
+        .special-btn img { width: 40px; height: 40px; object-fit: contain; }
 
         /* キャンバスエリア */
         #canvas-container { overflow: auto; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; max-height: 50vh; text-align: center; }
@@ -126,13 +125,12 @@
         <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">ドラッグで移動、ダブルタップで削除</div>
         <div id="preview-container"></div>
 
-        <!-- 💡 新機能：改行と空白の追加ボタン -->
         <div class="special-actions">
             <button class="special-btn" onclick="addSpecialItem('blank')">
-                <img src="img/空白.png" alt="空白">空白を追加
+                <img src="img/空白.png" alt="空白">
             </button>
             <button class="special-btn" onclick="addSpecialItem('newline')">
-                <img src="img/改行.png" alt="改行">改行を追加
+                <img src="img/改行.png" alt="改行">
             </button>
         </div>
 
