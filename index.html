@@ -6,34 +6,28 @@
     <title>画像グリッド配置ツール</title>
     <link rel="icon" href="img/favicon.png" type="image/png">
     
-    <!-- ドラッグ移動用ライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <!-- PDF書き出し用ライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- PSD書き出し用ライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/ag-psd@14.3.0/dist/bundle.js"></script>
 
     <style>
-        /* 全体の基本設定 */
         * { box-sizing: border-box; }
         body { font-family: sans-serif; padding: 20px; background-color: #f0f2f5; margin: 0; display: flex; gap: 20px; }
         
-        /* メインエリア */
         .main-content { flex: 1; min-width: 0; }
         
-        /* サイドバー（履歴エリア） */
-        .sidebar { width: 250px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; max-height: calc(100vh - 40px); overflow-y: auto; flex-shrink: 0; }
+        .sidebar { width: 280px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; max-height: calc(100vh - 40px); overflow-y: auto; flex-shrink: 0; }
         .history-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
         .history-item:hover { background: #f8f9fa; }
         .history-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #ddd; flex-shrink: 0; }
-        .history-info { font-size: 0.8em; color: #555; flex-grow: 1; line-height: 1.4; }
+        .history-info { font-size: 0.8em; color: #555; flex-grow: 1; line-height: 1.4; word-break: break-all; }
         .delete-btn { color: #dc3545; background: none; border: none; cursor: pointer; padding: 5px; flex-shrink: 0; }
 
-        /* コントロールパネル */
-        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-start; }
         .control-group { display: flex; flex-direction: column; }
         label { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; color: #333; }
         input[type="number"], input[type="text"], select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+        input[type="color"] { width: 40px; height: 32px; padding: 0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
         
         button { padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         button:hover { background: #0056b3; filter: brightness(1.1); }
@@ -41,9 +35,9 @@
         .btn-warning { background: #ffc107; color: black; }
         .btn-info { background: #17a2b8; }
         .btn-secondary { background: #6c757d; }
+        .btn-danger { background: #dc3545; }
 
-        /* ダウンロードボタンとプルダウンの結合デザイン */
-        .download-group { display: flex; align-items: stretch; }
+        .download-group { display: flex; align-items: stretch; height: 100%; }
         .download-group button { border-top-right-radius: 0; border-bottom-right-radius: 0; margin: 0; padding: 10px 15px; }
         .download-group select {
             border-top-left-radius: 0; border-bottom-left-radius: 0; border: 1px solid #218838;
@@ -52,12 +46,10 @@
         }
         .download-group select:hover { background: #1e7e34; }
         
-        /* ドラッグ＆ドロップエリア */
         #drop-zone { border: 2px dashed #bbb; padding: 20px; text-align: center; border-radius: 8px; background: #fafafa; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         #drop-zone.dragover { background: #e1f5fe; border-color: #03a9f4; }
         #drop-zone p { margin: 0; color: #666; pointer-events: none; line-height: 1.5; }
 
-        /* プレビューエリア */
         #preview-container { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 15px; min-height: 80px; background: white; padding: 20px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .preview-wrapper { position: relative; width: 64px; height: 64px; cursor: grab; }
         .preview-wrapper:active { cursor: grabbing; }
@@ -68,7 +60,6 @@
         }
         .sortable-ghost { opacity: 0.4; background-color: #e1f5fe; border-radius: 4px; transform: scale(1.05); }
 
-        /* 特殊アクションボタン（空白・改行） */
         .special-actions { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 20px; }
         .special-btn { 
             display: flex; align-items: center; justify-content: center; gap: 8px; 
@@ -78,24 +69,21 @@
         .special-btn:hover { background: #dde2e6; }
         .special-btn img { width: 30px; height: 30px; object-fit: contain; }
 
-        /* モード切替スイッチ */
         .mode-selector { width: 100%; display: flex; flex-direction: row; align-items: center; gap: 20px; background: #e9ecef; padding: 12px 15px; border-radius: 8px; flex-wrap: wrap; }
         .mode-selector label { margin: 0; font-size: 0.95em; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
-        /* コントロールグループ */
         #manualControls, #autoControls { width: 100%; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; padding: 15px; border-radius: 8px; background: #f8f9fa; border: 1px solid #ddd; }
         #autoControls { border-color: #007bff; border-width: 2px; }
 
-        /* キャンバスエリア */
+        .settings-block { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 8px; width: 100%; }
+
         #canvas-container { overflow: auto; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; max-height: 50vh; text-align: center; }
         canvas { box-shadow: 0 0 5px rgba(0,0,0,0.2); max-width: 100%; height: auto; }
         
-        /* ユーティリティ */
         .flex-spacer { flex-grow: 1; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
         .top-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
-        /* スマホ用レスポンシブデザイン */
         @media screen and (max-width: 768px) {
             body { flex-direction: column; padding: 10px; gap: 15px; }
             .sidebar { width: 100%; max-height: 300px; order: 2; }
@@ -132,27 +120,52 @@
             <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
         </div>
 
-        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">ドラッグで移動、ダブルタップで削除</div>
+        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">ドラッグ(長押し)で移動、ダブルタップで削除</div>
         <div id="preview-container"></div>
 
         <div class="special-actions">
             <button class="special-btn" onclick="addSpecialItem('blank')">
-                <img src="img/空白.png" alt="空白">
+                <img src="img/空白.png" alt="空白">空白を追加
             </button>
             <button class="special-btn" onclick="addSpecialItem('newline')">
-                <img src="img/改行.png" alt="改行">
+                <img src="img/改行.png" alt="改行">改行を追加
             </button>
         </div>
 
         <div class="controls">
-            <!-- モード切替スイッチ -->
-            <div class="mode-selector">
-                <strong>生成タイプ:</strong>
-                <label><input type="radio" name="calcMode" value="manual" checked onchange="toggleMode()"> 行列を手動指定</label>
-                <label><input type="radio" name="calcMode" value="auto" onchange="toggleMode()"> 画像比率を指定して自動配置</label>
+            <!-- 💡 新機能：背景設定 / 枠線設定 -->
+            <div class="settings-block">
+                <div class="control-group">
+                    <label>背景設定</label>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="color" id="bgColor" value="#ffffff" title="背景色">
+                        <button class="btn-secondary" onclick="document.getElementById('bgImageInput').click()" style="padding: 6px;">画像読込</button>
+                        <input type="file" id="bgImageInput" accept="image/*" style="display: none;" onchange="handleBgImage(event)">
+                        <button id="clearBgBtn" class="btn-danger" style="display: none; padding: 6px;" onclick="clearBgImage()">✕ 削除</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>枠線設定 <input type="checkbox" id="borderEnable" onchange="toggleBorderSettings()" style="margin-left:5px; transform: scale(1.2);"></label>
+                    <div id="borderSettings" style="display: none; flex-wrap: wrap; gap: 8px; align-items: center;">
+                        <select id="borderType">
+                            <option value="both">全体 ＋ 各画像</option>
+                            <option value="outer">キャンバス全体のみ</option>
+                            <option value="inner">各画像のみ</option>
+                        </select>
+                        <input type="color" id="borderColor" value="#000000" title="枠線の色">
+                        <input type="number" id="borderWidth" value="2" min="1" style="width: 50px;" title="枠線の太さ(px)"> px
+                    </div>
+                </div>
             </div>
 
-            <!-- 手動指定モードのメニュー -->
+            <!-- モード切替スイッチ -->
+            <div class="mode-selector" style="margin-top: 10px;">
+                <strong>生成モード:</strong>
+                <label><input type="radio" name="calcMode" value="manual" checked onchange="toggleMode()"> ✍️ 行列を手動指定</label>
+                <label><input type="radio" name="calcMode" value="auto" onchange="toggleMode()"> 🪄 比率にぴったり自動配置</label>
+            </div>
+
             <div id="manualControls">
                 <div class="control-group">
                     <label>列数と行数</label>
@@ -164,46 +177,46 @@
                     </div>
                 </div>
                 <div class="control-group">
-                    <label>キャンバス比率</label>
+                    <label>キャンバス比率(余白調整)</label>
                     <div style="display: flex; align-items: center; gap: 5px;">
                         <select id="aspectRatio" onchange="toggleCustomRatio('aspectRatio', 'customRatio')">
-                            <option value="none">指定なし</option>
-                            <option value="1:1">1:1</option>
-                            <option value="16:9">16:9</option>
-                            <option value="9:16">9:16</option>
+                            <option value="none">指定なし(ぴったり)</option>
+                            <option value="1:1">1:1 (正方形)</option>
+                            <option value="16:9">16:9 (横長)</option>
+                            <option value="9:16">9:16 (縦長)</option>
                             <option value="4:3">4:3</option>
                             <option value="3:4">3:4</option>
-                            <option value="custom">カスタム</option>
+                            <option value="custom">カスタム...</option>
                         </select>
                         <input type="text" id="customRatio" placeholder="例: 2:1" style="display:none; width:70px;">
                     </div>
                 </div>
             </div>
 
-            <!-- 自動配置モードのメニュー -->
             <div id="autoControls" style="display: none;">
                 <div class="control-group">
-                    <label style="color: #007bff;">ターゲット比率</label>
+                    <label style="color: #007bff;">ターゲット比率 (ぎっしり詰める)</label>
                     <div style="display: flex; align-items: center; gap: 5px;">
                         <select id="autoRatio" onchange="toggleCustomRatio('autoRatio', 'autoCustomRatio')">
-                            <option value="1:1">1:1</option>
-                            <option value="16:9" selected>16:9</option>
-                            <option value="9:16">9:16</option>
+                            <option value="1:1">1:1 (正方形)</option>
+                            <option value="16:9" selected>16:9 (横長)</option>
+                            <option value="9:16">9:16 (縦長)</option>
                             <option value="4:3">4:3</option>
                             <option value="3:4">3:4</option>
-                            <option value="custom">カスタム</option>
+                            <option value="custom">カスタム...</option>
                         </select>
                         <input type="text" id="autoCustomRatio" placeholder="例: 2:1" style="display:none; width:70px;">
                     </div>
                 </div>
                 <div style="font-size: 0.85em; color: #555; align-self: center;">
+                    ※ 指定した比率に最も近くなるよう、列と行を自動計算して余白なく配置します。
                 </div>
             </div>
 
-            <!-- 共通設定 -->
-            <div style="display: flex; gap: 15px; width: 100%; align-items: flex-end;">
-                <div class="control-group">
-                    <label>外側余白・画像間隔(横/縦)</label>
+            <!-- 共通余白設定 -->
+            <div style="display: flex; gap: 15px; width: 100%; align-items: stretch; margin-top: 10px;">
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>外側余白・画像間隔</label>
                     <div style="display: flex; gap: 5px;">
                         <input type="number" id="margin" value="20" min="0" placeholder="外余白" title="外側余白" style="width: 60px;">
                         <input type="number" id="gapX" value="10" min="0" placeholder="横間隔" title="横間隔" style="width: 60px;">
@@ -213,7 +226,7 @@
 
                 <div class="flex-spacer"></div>
                 
-                <button onclick="generateGrid()" style="padding: 10px 15px;">▶ 生成＆履歴保存</button>
+                <button onclick="generateGrid()" style="padding: 10px 15px; align-self: flex-end;">▶ 生成＆履歴保存</button>
                 
                 <div class="download-group">
                     <button onclick="downloadGrid()" class="btn-success">⬇ 保存</button>
@@ -232,8 +245,17 @@
         </div>
     </div>
 
+    <!-- 💡 履歴バックアップ機能を追加したサイドバー -->
     <div class="sidebar">
-        <h3 style="margin-top:0; border-bottom: 2px solid #ccc; padding-bottom: 10px; font-size: 1.1em;">🕒 履歴 (自動保存)</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 10px;">
+            <h3 style="margin:0; font-size: 1.1em;">🕒 履歴</h3>
+            <div style="display:flex; gap: 5px;">
+                <button class="btn-warning" style="padding: 4px 8px; font-size: 0.8em; background:#ff9800; border:none; color:white; cursor:pointer;" onclick="document.getElementById('importHistoryFile').click()" title="バックアップから復元">📥 復元</button>
+                <input type="file" id="importHistoryFile" accept=".json" style="display: none;" onchange="importAllHistory(event)">
+                <button class="btn-info" style="padding: 4px 8px; font-size: 0.8em; background:#17a2b8; border:none; color:white; cursor:pointer;" onclick="exportAllHistory()" title="すべての履歴を保存">📤 保存</button>
+            </div>
+        </div>
+        <div style="font-size: 0.75em; color: #888; margin-bottom: 10px;">※ブラウザの仕様により履歴が消える場合があるため、定期的な「📤保存」をおすすめします。</div>
         <div id="history-list"></div>
     </div>
 
@@ -242,6 +264,7 @@
         let sortableInstance = null;
         let lastTapIndex = -1;
         let lastTapTime = 0;
+        let customBgImageData = null; // 💡 背景画像データ保持用
 
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('imageInput');
@@ -264,7 +287,15 @@
                         db.createObjectStore(STORE_NAME, { keyPath: 'id' });
                     }
                 };
-                request.onsuccess = (e) => { db = e.target.result; resolve(); updateHistoryUI(); };
+                request.onsuccess = (e) => { 
+                    db = e.target.result; 
+                    // 💡 データ永続化のリクエスト（対応ブラウザのみ）
+                    if (navigator.storage && navigator.storage.persist) {
+                        navigator.storage.persist().catch(console.error);
+                    }
+                    resolve(); 
+                    updateHistoryUI(); 
+                };
                 request.onerror = (e) => reject(e.target.error);
             });
         };
@@ -277,6 +308,24 @@
                 reader.onerror = error => reject(error);
             });
         };
+
+        // 💡 背景画像の読み込み・削除機能
+        async function handleBgImage(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            customBgImageData = await fileToBase64(file);
+            document.getElementById('clearBgBtn').style.display = 'inline-block';
+            e.target.value = '';
+        }
+        function clearBgImage() {
+            customBgImageData = null;
+            document.getElementById('clearBgBtn').style.display = 'none';
+        }
+
+        // 💡 枠線設定の表示切替
+        function toggleBorderSettings() {
+            document.getElementById('borderSettings').style.display = document.getElementById('borderEnable').checked ? 'flex' : 'none';
+        }
 
         dropZone.addEventListener('click', () => fileInput.click());
         dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -404,6 +453,13 @@
             });
         };
 
+        const hexToRgb = hex => {
+            let shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+            hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+            let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [0, 0, 0];
+        };
+
         async function getGridConfig() {
             const baseItem = selectedImages.find(item => !item.type || item.type === 'image');
             if (!baseItem) throw new Error("基準となる通常の画像が含まれていません。");
@@ -416,6 +472,13 @@
             const gapX = parseInt(document.getElementById('gapX').value, 10);
             const gapY = parseInt(document.getElementById('gapY').value, 10);
             const calcMode = document.querySelector('input[name="calcMode"]:checked').value;
+
+            // 💡 枠線と背景の設定を読み込む
+            const bgColor = document.getElementById('bgColor').value;
+            const borderEnable = document.getElementById('borderEnable').checked;
+            const borderType = document.getElementById('borderType').value;
+            const borderColor = document.getElementById('borderColor').value;
+            const borderWidth = parseInt(document.getElementById('borderWidth').value, 10);
 
             let activeCols, activeRows, finalW, finalH, globalOffsetX = 0, globalOffsetY = 0;
 
@@ -463,10 +526,7 @@
                 const targetRatio = (targetX && targetY) ? (targetX / targetY) : 1;
 
                 let bestDiff = Infinity;
-                let bestCols = 1;
-                let bestRows = 1;
-                let bestW = 0;
-                let bestH = 0;
+                let bestCols = 1; let bestRows = 1; let bestW = 0; let bestH = 0;
 
                 for (let testCols = 1; testCols <= Math.max(selectedImages.length, 1); testCols++) {
                     const metrics = simulateGridMetrics(selectedImages, testCols, cellWidth, cellHeight, gapX, gapY, margin);
@@ -474,23 +534,18 @@
                     const diff = Math.abs(currentRatio - targetRatio);
                     
                     if (diff < bestDiff) {
-                        bestDiff = diff;
-                        bestCols = testCols;
-                        bestRows = metrics.rows;
-                        bestW = metrics.w;
-                        bestH = metrics.h;
+                        bestDiff = diff; bestCols = testCols; bestRows = metrics.rows;
+                        bestW = metrics.w; bestH = metrics.h;
                     }
                 }
-                activeCols = bestCols;
-                activeRows = bestRows;
-                finalW = bestW;
-                finalH = bestH;
+                activeCols = bestCols; activeRows = bestRows; finalW = bestW; finalH = bestH;
             }
 
             return {
                 mode: calcMode, cols: activeCols, rows: activeRows,
                 margin, gapX, gapY, finalW, finalH, globalOffsetX, globalOffsetY,
-                cellWidth, cellHeight
+                cellWidth, cellHeight,
+                bgColor, borderEnable, borderType, borderColor, borderWidth
             };
         }
 
@@ -522,7 +577,18 @@
             const drawHeight = img.height * scale;
             const offsetX = (config.cellWidth - drawWidth) / 2;
             const offsetY = (config.cellHeight - drawHeight) / 2;
-            ctx.drawImage(img, baseX + offsetX + config.globalOffsetX, baseY + offsetY + config.globalOffsetY, drawWidth, drawHeight);
+            
+            const finalX = baseX + offsetX + config.globalOffsetX;
+            const finalY = baseY + offsetY + config.globalOffsetY;
+
+            ctx.drawImage(img, finalX, finalY, drawWidth, drawHeight);
+
+            // 💡 個別画像の枠線を描画
+            if (config.borderEnable && (config.borderType === 'inner' || config.borderType === 'both')) {
+                ctx.strokeStyle = config.borderColor;
+                ctx.lineWidth = config.borderWidth;
+                ctx.strokeRect(finalX, finalY, drawWidth, drawHeight);
+            }
         }
 
         async function generateGrid() {
@@ -532,18 +598,29 @@
 
             canvas.width = config.finalW;
             canvas.height = config.finalH;
-            ctx.fillStyle = "#ffffff";
+            
+            // 💡 背景色と背景画像の描画
+            ctx.fillStyle = config.bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (customBgImageData) {
+                const bgImg = await loadImage(customBgImageData);
+                ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+            }
 
+            // 画像と個別枠線の描画
             await renderGridItems(config, async (item, baseX, baseY) => {
                 await drawSingleImage(ctx, config, item, baseX, baseY);
             });
 
-            saveToHistory({ 
-                cols: document.getElementById('cols').value, rows: document.getElementById('rows').value, 
-                margin: document.getElementById('margin').value, gapX: document.getElementById('gapX').value, 
-                gapY: document.getElementById('gapY').value 
-            });
+            // 💡 キャンバス全体の枠線を描画
+            if (config.borderEnable && (config.borderType === 'outer' || config.borderType === 'both')) {
+                ctx.strokeStyle = config.borderColor;
+                ctx.lineWidth = config.borderWidth;
+                const halfW = config.borderWidth / 2;
+                ctx.strokeRect(halfW, halfW, canvas.width - config.borderWidth, canvas.height - config.borderWidth);
+            }
+
+            saveToHistory();
         }
 
         function getDefaultFileName() {
@@ -581,8 +658,23 @@
                         unit: 'px',
                         format: [config.finalW, config.finalH]
                     });
-                    pdf.setFillColor(255, 255, 255);
+                    
+                    // PDFの背景処理
+                    const [r, g, b] = hexToRgb(config.bgColor);
+                    pdf.setFillColor(r, g, b);
                     pdf.rect(0, 0, config.finalW, config.finalH, 'F');
+
+                    if (customBgImageData) {
+                        const bgFormat = customBgImageData.indexOf('image/jpeg') !== -1 ? 'JPEG' : 'PNG';
+                        pdf.addImage(customBgImageData, bgFormat, 0, 0, config.finalW, config.finalH);
+                    }
+
+                    // 枠線の色設定
+                    if (config.borderEnable) {
+                        const [br, bg, bb] = hexToRgb(config.borderColor);
+                        pdf.setDrawColor(br, bg, bb);
+                        pdf.setLineWidth(config.borderWidth);
+                    }
 
                     await renderGridItems(config, async (item, baseX, baseY) => {
                         const img = await loadImage(item.dataUrl);
@@ -592,13 +684,24 @@
                         const drawHeight = img.height * scale;
                         const offsetX = (config.cellWidth - drawWidth) / 2;
                         const offsetY = (config.cellHeight - drawHeight) / 2;
+                        const finalX = baseX + offsetX + config.globalOffsetX;
+                        const finalY = baseY + offsetY + config.globalOffsetY;
+
                         const imgFormat = img.src.indexOf('image/jpeg') !== -1 ? 'JPEG' : 'PNG';
-                        
-                        pdf.addImage(img.src, imgFormat, 
-                            baseX + offsetX + config.globalOffsetX, 
-                            baseY + offsetY + config.globalOffsetY, 
-                            drawWidth, drawHeight);
+                        pdf.addImage(img.src, imgFormat, finalX, finalY, drawWidth, drawHeight);
+
+                        // 個別枠線
+                        if (config.borderEnable && (config.borderType === 'inner' || config.borderType === 'both')) {
+                            pdf.rect(finalX, finalY, drawWidth, drawHeight, 'D');
+                        }
                     });
+
+                    // 全体枠線
+                    if (config.borderEnable && (config.borderType === 'outer' || config.borderType === 'both')) {
+                        const halfW = config.borderWidth / 2;
+                        pdf.rect(halfW, halfW, config.finalW - config.borderWidth, config.finalH - config.borderWidth, 'D');
+                    }
+
                     pdf.save(`${defaultName}.pdf`);
                 } catch (e) {
                     alert("PDFの生成に失敗しました。");
@@ -611,8 +714,20 @@
                     const bgCanvas = document.createElement('canvas');
                     bgCanvas.width = config.finalW; bgCanvas.height = config.finalH;
                     const bgCtx = bgCanvas.getContext('2d');
-                    bgCtx.fillStyle = '#ffffff';
+                    
+                    // PSDの背景と全体枠線処理
+                    bgCtx.fillStyle = config.bgColor;
                     bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+                    if (customBgImageData) {
+                        const bgImg = await loadImage(customBgImageData);
+                        bgCtx.drawImage(bgImg, 0, 0, bgCanvas.width, bgCanvas.height);
+                    }
+                    if (config.borderEnable && (config.borderType === 'outer' || config.borderType === 'both')) {
+                        bgCtx.strokeStyle = config.borderColor;
+                        bgCtx.lineWidth = config.borderWidth;
+                        const halfW = config.borderWidth / 2;
+                        bgCtx.strokeRect(halfW, halfW, config.finalW - config.borderWidth, config.finalH - config.borderWidth);
+                    }
 
                     const psdData = {
                         width: config.finalW, height: config.finalH,
@@ -624,7 +739,7 @@
                         const layerCanvas = document.createElement('canvas');
                         layerCanvas.width = config.finalW; layerCanvas.height = config.finalH;
                         const layerCtx = layerCanvas.getContext('2d');
-                        await drawSingleImage(layerCtx, config, item, baseX, baseY);
+                        await drawSingleImage(layerCtx, config, item, baseX, baseY); // 枠線も一緒に書き込まれる
 
                         psdData.children.push({ name: `画像 ${imageCounter++}`, canvas: layerCanvas });
                     });
@@ -643,6 +758,48 @@
             }
         }
 
+        // 💡 履歴一括バックアップ・復元処理
+        function exportAllHistory() {
+            if (!db) return;
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const request = transaction.objectStore(STORE_NAME).getAll();
+            request.onsuccess = (e) => {
+                const records = e.target.result;
+                if(records.length === 0) { alert("バックアップする履歴がありません。"); return; }
+                const dataStr = JSON.stringify(records);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `grid_history_backup_${new Date().getTime()}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+            };
+        }
+
+        function importAllHistory(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const records = JSON.parse(e.target.result);
+                    if(!Array.isArray(records)) throw new Error();
+                    const transaction = db.transaction([STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    records.forEach(record => store.put(record));
+                    transaction.oncomplete = () => {
+                        updateHistoryUI();
+                        alert(`${records.length}件の履歴を復元しました！`);
+                    };
+                } catch (err) {
+                    alert("履歴ファイルの読み込みに失敗しました。");
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
         function getProjectData() {
             return {
                 images: selectedImages,
@@ -656,7 +813,14 @@
                     aspectRatio: document.getElementById('aspectRatio').value,
                     customRatio: document.getElementById('customRatio').value,
                     autoRatio: document.getElementById('autoRatio').value,
-                    autoCustomRatio: document.getElementById('autoCustomRatio').value
+                    autoCustomRatio: document.getElementById('autoCustomRatio').value,
+                    
+                    bgColor: document.getElementById('bgColor').value,
+                    bgImageData: customBgImageData,
+                    borderEnable: document.getElementById('borderEnable').checked,
+                    borderType: document.getElementById('borderType').value,
+                    borderColor: document.getElementById('borderColor').value,
+                    borderWidth: document.getElementById('borderWidth').value
                 }
             };
         }
@@ -664,9 +828,8 @@
         function loadProjectData(data) {
             selectedImages = data.images || [];
             if(data.settings) {
-                if (data.settings.calcMode) {
-                    document.querySelector(`input[name="calcMode"][value="${data.settings.calcMode}"]`).checked = true;
-                }
+                if (data.settings.calcMode) document.querySelector(`input[name="calcMode"][value="${data.settings.calcMode}"]`).checked = true;
+                
                 document.getElementById('cols').value = data.settings.cols || 10;
                 document.getElementById('rows').value = data.settings.rows || 10;
                 document.getElementById('margin').value = data.settings.margin || 20;
@@ -678,6 +841,18 @@
                 if (data.settings.autoRatio) document.getElementById('autoRatio').value = data.settings.autoRatio;
                 if (data.settings.autoCustomRatio) document.getElementById('autoCustomRatio').value = data.settings.autoCustomRatio;
                 
+                if (data.settings.bgColor) document.getElementById('bgColor').value = data.settings.bgColor;
+                customBgImageData = data.settings.bgImageData || null;
+                document.getElementById('clearBgBtn').style.display = customBgImageData ? 'inline-block' : 'none';
+
+                if (data.settings.borderEnable !== undefined) {
+                    document.getElementById('borderEnable').checked = data.settings.borderEnable;
+                    toggleBorderSettings();
+                }
+                if (data.settings.borderType) document.getElementById('borderType').value = data.settings.borderType;
+                if (data.settings.borderColor) document.getElementById('borderColor').value = data.settings.borderColor;
+                if (data.settings.borderWidth) document.getElementById('borderWidth').value = data.settings.borderWidth;
+
                 toggleMode();
                 toggleCustomRatio('aspectRatio', 'customRatio');
                 toggleCustomRatio('autoRatio', 'autoCustomRatio');
@@ -718,7 +893,7 @@
             reader.readAsText(file);
         }
 
-        function saveToHistory(settings) {
+        function saveToHistory() {
             if (!db) return;
             const projectData = getProjectData();
             const record = { id: new Date().getTime(), date: new Date().toLocaleString(), thumb: canvas.toDataURL('image/jpeg', 0.1), data: projectData };
