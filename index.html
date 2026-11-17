@@ -120,7 +120,7 @@
             <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
         </div>
 
-        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">ドラッグ(長押し)で移動、ダブルタップで削除</div>
+        <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">ドラッグで移動、ダブルタップで削除</div>
         <div id="preview-container"></div>
 
         <div class="special-actions">
@@ -162,8 +162,8 @@
             <!-- モード切替スイッチ -->
             <div class="mode-selector" style="margin-top: 10px;">
                 <strong>生成モード:</strong>
-                <label><input type="radio" name="calcMode" value="manual" checked onchange="toggleMode()"> ✍️ 行列を手動指定</label>
-                <label><input type="radio" name="calcMode" value="auto" onchange="toggleMode()"> 🪄 比率にぴったり自動配置</label>
+                <label><input type="radio" name="calcMode" value="manual" checked onchange="toggleMode()"> 行列を手動指定</label>
+                <label><input type="radio" name="calcMode" value="auto" onchange="toggleMode()"> 自動配置</label>
             </div>
 
             <div id="manualControls">
@@ -177,16 +177,16 @@
                     </div>
                 </div>
                 <div class="control-group">
-                    <label>キャンバス比率(余白調整)</label>
+                    <label>キャンバス比率</label>
                     <div style="display: flex; align-items: center; gap: 5px;">
                         <select id="aspectRatio" onchange="toggleCustomRatio('aspectRatio', 'customRatio')">
-                            <option value="none">指定なし(ぴったり)</option>
-                            <option value="1:1">1:1 (正方形)</option>
-                            <option value="16:9">16:9 (横長)</option>
-                            <option value="9:16">9:16 (縦長)</option>
+                            <option value="none">指定なし</option>
+                            <option value="1:1">1:1</option>
+                            <option value="16:9">16:9</option>
+                            <option value="9:16">9:16</option>
                             <option value="4:3">4:3</option>
                             <option value="3:4">3:4</option>
-                            <option value="custom">カスタム...</option>
+                            <option value="custom">カスタム</option>
                         </select>
                         <input type="text" id="customRatio" placeholder="例: 2:1" style="display:none; width:70px;">
                     </div>
@@ -195,15 +195,15 @@
 
             <div id="autoControls" style="display: none;">
                 <div class="control-group">
-                    <label style="color: #007bff;">ターゲット比率 (ぎっしり詰める)</label>
+                    <label style="color: #007bff;">ターゲット比率</label>
                     <div style="display: flex; align-items: center; gap: 5px;">
                         <select id="autoRatio" onchange="toggleCustomRatio('autoRatio', 'autoCustomRatio')">
-                            <option value="1:1">1:1 (正方形)</option>
-                            <option value="16:9" selected>16:9 (横長)</option>
-                            <option value="9:16">9:16 (縦長)</option>
+                            <option value="1:1">1:1</option>
+                            <option value="16:9" selected>16:9</option>
+                            <option value="9:16">9:16</option>
                             <option value="4:3">4:3</option>
                             <option value="3:4">3:4</option>
-                            <option value="custom">カスタム...</option>
+                            <option value="custom">カスタム</option>
                         </select>
                         <input type="text" id="autoCustomRatio" placeholder="例: 2:1" style="display:none; width:70px;">
                     </div>
@@ -255,7 +255,7 @@
                 <button class="btn-info" style="padding: 4px 8px; font-size: 0.8em; background:#17a2b8; border:none; color:white; cursor:pointer;" onclick="exportAllHistory()" title="すべての履歴を保存">📤 保存</button>
             </div>
         </div>
-        <div style="font-size: 0.75em; color: #888; margin-bottom: 10px;">※ブラウザの仕様により履歴が消える場合があるため、定期的な「📤保存」をおすすめします。</div>
+        <div style="font-size: 0.75em; color: #888; margin-bottom: 10px;"></div>
         <div id="history-list"></div>
     </div>
 
